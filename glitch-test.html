@@ -1,0 +1,477 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <!-- html2canvas for snapshot functionality -->
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Glitch Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="glitch-test.css">
+</head>
+<body>
+                <!-- UI Toggle Tab -->
+                <div id="ui-toggle-tab">
+                    <button id="toggle-ui-btn">HIDE CONTROL U.I.</button>
+                </div>
+        <div id="freeze-frame-btn-container">
+            <button id="freeze-frame-btn">FREEZE FRAME!</button>
+        </div>
+    <div id="glitch-container">
+        <canvas id="hue-bg"></canvas>
+        <canvas id="bg-custom"></canvas>
+        <canvas class="glitch-canvas" id="glitchCanvas"></canvas>
+    </div>
+        <!-- Custom Background Toggle Button -->
+        <div id="custom-bg-btn-container">
+            <button id="custom-bg-btn" class="custom-bg-btn">Custom Background!</button>
+        </div>
+            <div id="custom-bg-panel">
+                <label for="custom-bg-file" class="custom-bg-panel-header">Select up to 50 images for cycling background:</label>
+                <div id="custom-bg-thumbnails"></div>
+            <input type="file" id="custom-bg-file" accept="image/*" multiple title="Select up to 50 images for cycling background" />
+            <button id="custom-bg-apply-btn">Apply</button>
+            <div class="custom-bg-panel-footer">Images will stretch to fit the background and cycle every 20 seconds with a fade effect.</div>
+        </div>
+                             
+          <div id="effect-toggle-column"></div>
+
+       
+
+        <!-- Glitch Speed Slider -->
+        <div id="glitch-speed-bar">
+            <button id="null-speed-btn" class="glitch-toggle-btn">Null Imput</button>
+            <label for="glitch-speed-slider">Glitch Speed</label>
+            <input type="range" id="glitch-speed-slider" min="0.01" max="3" step="0.01" value="1.5">
+        </div>
+
+        <!-- Glitch Opacity Slider -->
+        <div id="glitch-opacity-bar">
+            <button id="null-opacity-btn" class="glitch-toggle-btn">Null Imput</button>
+            <label for="glitch-opacity-slider">Glitch Opacity</label>
+            <input type="range" id="glitch-opacity-slider" min="0" max="1" step="0.01" value="0.5">
+        </div>
+
+    <script src="glitch-script.js"></script>
+            <script>
+            // --- Hide U.I. Tabified Button Logic ---
+            document.addEventListener('DOMContentLoaded', function() {
+                const uiTab = document.getElementById('ui-toggle-tab');
+                const toggleBtn = document.getElementById('toggle-ui-btn');
+                // Elements to hide/show
+                const uiElements = [
+                    document.getElementById('glitch-speed-bar'),
+                    document.getElementById('glitch-opacity-bar'),
+                    document.getElementById('effect-toggle-column')
+                ];
+                let uiHidden = false;
+
+                function setUIHidden(hidden) {
+                    uiHidden = hidden;
+                    uiElements.forEach(el => { if (el) el.style.display = hidden ? 'none' : ''; });
+                    if (hidden) {
+                        uiTab.classList.add('hide');
+                        setTimeout(() => {
+                            uiTab.classList.remove('hide');
+                            uiTab.classList.add('show');
+                        }, 200);
+                    } else {
+                        uiTab.classList.remove('hide');
+                        uiTab.classList.remove('show');
+                    }
+                    toggleBtn.textContent = hidden ? 'SHOW CONTROL U.I.' : 'HIDE CONTROL U.I.';
+                }
+
+                toggleBtn.addEventListener('click', function(e) {
+                    setUIHidden(!uiHidden);
+                    e.stopPropagation();
+                });
+
+                // Show tab on edge hover/tap
+                let tabTimeout = null;
+                function showTab() {
+                    if (!uiHidden) return;
+                    uiTab.classList.add('show');
+                    if (tabTimeout) clearTimeout(tabTimeout);
+                    tabTimeout = setTimeout(() => {
+                        if (uiHidden) uiTab.classList.remove('show');
+                    }, 2000);
+                }
+                document.addEventListener('mousemove', function(e) {
+                    if (uiHidden && e.clientX > window.innerWidth - 24) {
+                        showTab();
+                    }
+                });
+                uiTab.addEventListener('mouseenter', function() {
+                    if (uiHidden) uiTab.classList.add('show');
+                });
+                uiTab.addEventListener('mouseleave', function() {
+                    if (uiHidden) uiTab.classList.remove('show');
+                });
+                // Touch support
+                document.addEventListener('touchstart', function(e) {
+                    if (!uiHidden) return;
+                    const touch = e.touches[0];
+                    if (touch && touch.clientX > window.innerWidth - 24) {
+                        showTab();
+                    }
+                });
+                // Always start visible
+                setUIHidden(false);
+            });
+            </script>
+    <script>
+
+
+        // --- Main DOMContentLoaded Handler ---
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Freeze Frame Button Handler ---
+            const freezeFrameBtn = document.getElementById('freeze-frame-btn');
+            if (freezeFrameBtn) {
+                freezeFrameBtn.addEventListener('click', function() {
+                    html2canvas(document.body, {backgroundColor: null, useCORS: true}).then(function(canvas) {
+                        const link = document.createElement('a');
+                        link.download = 'freeze-frame.png';
+                        link.href = canvas.toDataURL('image/png');
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+                });
+            }
+
+            // --- Glitch Speed and Opacity Slider Handlers ---
+            const glitchSpeedSlider = document.getElementById('glitch-speed-slider');
+            const nullSpeedBtn = document.getElementById('null-speed-btn');
+            const glitchOpacitySlider = document.getElementById('glitch-opacity-slider');
+            const nullOpacityBtn = document.getElementById('null-opacity-btn');
+
+            // --- Speed Slider ---
+            if (glitchSpeedSlider) {
+                function setGlitchSpeed(val) {
+                    const speed = Math.max(0.01, Math.min(3, parseFloat(val)));
+                    window.__glitchSpeed = speed;
+                    glitchSpeedSlider.value = speed;
+                }
+
+                setGlitchSpeed(1.5); // Initial value
+
+                glitchSpeedSlider.addEventListener('input', () => setGlitchSpeed(glitchSpeedSlider.value));
+
+                if (nullSpeedBtn) {
+                    nullSpeedBtn.addEventListener('click', () => {
+                        const currentVal = parseFloat(glitchSpeedSlider.value);
+                        if (currentVal > 0.01) {
+                            setGlitchSpeed(0.01);
+                            nullSpeedBtn.textContent = 'Max Imput';
+                        } else {
+                            setGlitchSpeed(3);
+                            nullSpeedBtn.textContent = 'Null Imput';
+                        }
+                    });
+                }
+            }
+
+            // --- Opacity Slider ---
+            if (glitchOpacitySlider) {
+                function setGlitchOpacity(val) {
+                    const opacity = Math.max(0, Math.min(1, parseFloat(val)));
+                    if (typeof window.__setGlitchMasterOpacity === 'function') {
+                        window.__setGlitchMasterOpacity(opacity);
+                    }
+                    glitchOpacitySlider.value = opacity;
+                }
+
+                setGlitchOpacity(0.5); // Initial value
+
+                glitchOpacitySlider.addEventListener('input', () => setGlitchOpacity(glitchOpacitySlider.value));
+
+                if (nullOpacityBtn) {
+                    nullOpacityBtn.addEventListener('click', () => {
+                        const currentVal = parseFloat(glitchOpacitySlider.value);
+                        if (currentVal > 0) {
+                            setGlitchOpacity(0);
+                            nullOpacityBtn.textContent = 'Max Imput';
+                        } else {
+                            setGlitchOpacity(1);
+                            nullOpacityBtn.textContent = 'Null Imput';
+                        }
+                    });
+                }
+            }
+        });
+
+
+        function resizeCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            const bg = document.getElementById('hue-bg');
+            const glitch = document.getElementById('glitchCanvas');
+            bg.width = window.innerWidth * dpr;
+            bg.height = window.innerHeight * dpr;
+            bg.style.width = window.innerWidth + 'px';
+            bg.style.height = window.innerHeight + 'px';
+            glitch.width = window.innerWidth * dpr;
+            glitch.height = window.innerHeight * dpr;
+            glitch.style.width = window.innerWidth + 'px';
+            glitch.style.height = window.innerHeight + 'px';
+        }
+        window.addEventListener('resize', resizeCanvases);
+        window.addEventListener('orientationchange', resizeCanvases);
+        resizeCanvases();
+
+        // Animate the background hue canvas
+        const bgCanvas = document.getElementById('hue-bg');
+        const bgCtx = bgCanvas.getContext('2d');
+        let hue = 0, sat = 100, light = 50;
+        let hueSpeed = 360 / (30 * 60); // 360 degrees over 30 seconds at 60fps
+        let satSpeed = Math.PI * 2 / (30 * 60); // full sine wave over 30 seconds
+        let lightSpeed = Math.PI * 2 / (30 * 60); // full sine wave over 30 seconds
+        let satPhase = 0;
+        let lightPhase = 0;
+        let hueBGActive = true;
+        function animateHueBG() {
+            if (!hueBGActive) return;
+            const w = bgCanvas.width;
+            const h = bgCanvas.height;
+            hue = (hue + hueSpeed) % 360;
+            satPhase += satSpeed;
+            lightPhase += lightSpeed;
+            sat = 50 + 50 * Math.sin(satPhase);
+            light = 50 + 50 * Math.sin(lightPhase);
+            bgCtx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
+            bgCtx.fillRect(0, 0, w, h);
+            requestAnimationFrame(animateHueBG);
+        }
+        animateHueBG();
+
+        // Custom background canvas logic
+        const customBGCanvas = document.getElementById('bg-custom');
+        const customBGCtx = customBGCanvas.getContext('2d');
+        function resizeCustomBG() {
+            const dpr = window.devicePixelRatio || 1;
+            customBGCanvas.width = window.innerWidth * dpr;
+            customBGCanvas.height = window.innerHeight * dpr;
+            customBGCanvas.style.width = window.innerWidth + 'px';
+            customBGCanvas.style.height = window.innerHeight + 'px';
+        }
+        resizeCustomBG();
+        window.addEventListener('resize', resizeCustomBG);
+        window.addEventListener('orientationchange', resizeCustomBG);
+
+        // User image cycling logic (smooth crossfade, no hard cuts)
+        let userBGImages = [];
+        let userBGSelected = [];
+        let userBGTimer = null;
+        let userBGPanelOpen = false;
+        // Configurable durations (ms)
+        const USER_BG_FADE_DURATION = 10000; // 10s fade
+        const USER_BG_DISPLAY_DURATION = 20000; // 20s fully visible
+        const USER_BG_TOTAL_DURATION = USER_BG_FADE_DURATION + USER_BG_DISPLAY_DURATION; // 30s per image
+
+
+        function startUserBGCycle() {
+            if (userBGTimer) cancelAnimationFrame(userBGTimer);
+            // Always show custom background canvas when cycling images
+            customBGCanvas.style.display = 'block';
+            document.getElementById('hue-bg').style.display = 'none';
+            hueBGActive = false;
+            let startTime = performance.now();
+            function cycle(now) {
+                if (userBGSelected.length === 0) return;
+                const totalImages = userBGSelected.length;
+                const totalCycle = USER_BG_TOTAL_DURATION * totalImages;
+                const elapsed = (now - startTime) % totalCycle;
+                const currIdx = Math.floor(elapsed / USER_BG_TOTAL_DURATION) % totalImages;
+                const nextIdx = (currIdx + 1) % totalImages;
+                const phase = elapsed % USER_BG_TOTAL_DURATION;
+                customBGCtx.clearRect(0, 0, customBGCanvas.width, customBGCanvas.height);
+                // Mobile fallback: try to draw even if image loading events are unreliable
+                const currImg = userBGSelected[currIdx];
+                const nextImg = userBGSelected[nextIdx];
+                try {
+                    if (currImg.naturalWidth > 0) {
+                        if (phase < USER_BG_DISPLAY_DURATION) {
+                            customBGCtx.globalAlpha = 1;
+                            customBGCtx.drawImage(currImg, 0, 0, customBGCanvas.width, customBGCanvas.height);
+                        } else {
+                            const fade = (phase - USER_BG_DISPLAY_DURATION) / USER_BG_FADE_DURATION;
+                            customBGCtx.globalAlpha = 1 - fade;
+                            customBGCtx.drawImage(currImg, 0, 0, customBGCanvas.width, customBGCanvas.height);
+                            if (nextImg.naturalWidth > 0) {
+                                customBGCtx.globalAlpha = fade;
+                                customBGCtx.drawImage(nextImg, 0, 0, customBGCanvas.width, customBGCanvas.height);
+                            }
+                            customBGCtx.globalAlpha = 1;
+                        }
+                    }
+                } catch (e) {
+                    // On mobile, ignore draw errors
+                }
+                userBGTimer = requestAnimationFrame(cycle);
+            }
+            userBGTimer = requestAnimationFrame(cycle);
+        }
+
+        function stopUserBGCycle() {
+            if (userBGTimer) cancelAnimationFrame(userBGTimer);
+            userBGTimer = null;
+        }
+
+
+
+        // Ensure glitch-canvas is initialized after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.initializeGlitchCanvases) {
+                window.initializeGlitchCanvases();
+            }
+            // Custom BG toggle logic (now toggles panel and background)
+            const customBGBtn = document.getElementById('custom-bg-btn');
+            const customBGPanel = document.getElementById('custom-bg-panel');
+            const customBGThumbnails = document.getElementById('custom-bg-thumbnails');
+            const customBGFile = document.getElementById('custom-bg-file');
+            let customBGActivated = false;
+            customBGBtn.addEventListener('click', function() {
+                if (!customBGActivated) {
+                    // First click: activate custom background, show panel
+                    customBGActivated = true;
+                    document.getElementById('hue-bg').style.display = 'none';
+                    customBGCanvas.style.display = 'block';
+                    hueBGActive = false;
+                    customBGBtn.textContent = 'Select Background';
+                    customBGPanel.style.display = 'block';
+                } else {
+                    // Toggle panel
+                    userBGPanelOpen = !userBGPanelOpen;
+                    customBGPanel.style.display = userBGPanelOpen ? 'block' : 'none';
+                }
+            });
+
+            // Handle file input
+            customBGFile.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files).slice(0, 50);
+                userBGImages = [];
+                userBGSelected = [];
+                customBGThumbnails.innerHTML = '';
+                let loaded = 0;
+                files.forEach((file, idx) => {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const img = new window.Image();
+                        // Mobile fallback: always show custom background canvas when images are loaded
+                        img.onload = function() {
+                            userBGImages.push(img);
+                            userBGSelected.push(img);
+                            customBGCanvas.style.display = 'block';
+                            document.getElementById('hue-bg').style.display = 'none';
+                            hueBGActive = false;
+                            // Thumbnail
+                            const thumb = document.createElement('img');
+                            thumb.src = img.src;
+                            thumb.className = 'selected';
+                            thumb.title = 'Selected';
+                            function toggleSelection() {
+                                if (thumb.classList.contains('selected')) {
+                                    thumb.classList.remove('selected');
+                                    userBGSelected = userBGSelected.filter(i => i !== img);
+                                } else if (userBGSelected.length < 50) {
+                                    thumb.classList.add('selected');
+                                    userBGSelected.push(img);
+                                }
+                                if (userBGSelected.length === 0) {
+                                    stopUserBGCycle();
+                                    customBGCtx.clearRect(0, 0, customBGCanvas.width, customBGCanvas.height);
+                                    // On mobile, hide canvas if no images
+                                    customBGCanvas.style.display = 'none';
+                                    document.getElementById('hue-bg').style.display = 'block';
+                                    hueBGActive = true;
+                                } else {
+                                    userBGIndex = 0;
+                                    startUserBGCycle();
+                                }
+                            }
+                            thumb.onclick = toggleSelection;
+                            thumb.ontouchstart = function(e) {
+                                e.preventDefault();
+                                toggleSelection();
+                            };
+                            customBGThumbnails.appendChild(thumb);
+                            loaded++;
+                        };
+                        // Mobile fallback: force src assignment and canvas display
+                        img.src = ev.target.result;
+                        customBGCanvas.style.display = 'block';
+                        document.getElementById('hue-bg').style.display = 'none';
+                        hueBGActive = false;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            // Apply button logic
+            const customBGApplyBtn = document.getElementById('custom-bg-apply-btn');
+            customBGApplyBtn.addEventListener('click', function() {
+                if (userBGSelected.length > 0) {
+                    userBGIndex = 0;
+                    startUserBGCycle();
+                } else {
+                    stopUserBGCycle();
+                    customBGCtx.clearRect(0, 0, customBGCanvas.width, customBGCanvas.height);
+                }
+                customBGPanel.style.display = 'none';
+                userBGPanelOpen = false;
+            });
+        });
+
+    </script>
+            <script>
+        // Dynamically create effect toggle buttons for each effect
+        document.addEventListener('DOMContentLoaded', function() {
+            // List of effect names to match glitch-script.js (must match exactly)
+            const effectNames = [
+                'Neon Grad',
+                'Scanlines',
+                'VHS Glitch',
+                'Data Bands',
+                'Flash',
+                'HSL Rainbow',
+                'ASCII',
+                'Font Burn',
+                'Strobe',
+                'Gemini Bomb',
+                'B&W Invert',
+                'Hue/Color Cycle',
+                'Data Bomb'
+            ];
+            const effectToggleColumn = document.getElementById('effect-toggle-column');
+            if (!effectToggleColumn) return;
+            
+            // Track active states for each effect
+            const activeStates = {};
+
+            effectNames.forEach(effectName => {
+                const btn = document.createElement('button');
+                btn.className = 'effect-toggle-btn';
+                btn.textContent = effectName;
+                btn.dataset.effect = effectName;
+
+                btn.addEventListener('click', function() {
+                    const isActive = !activeStates[effectName];
+                    if (typeof window.__toggleEffect === 'function') {
+                        window.__toggleEffect(effectName, isActive);
+                    }
+                    activeStates[effectName] = isActive;
+
+                    // Visual feedback
+                    btn.classList.toggle('active', isActive);
+                    if (isActive) {
+                        btn.textContent = effectName + ' (ON)';
+                    } else {
+                        btn.textContent = effectName;
+                    }
+                });
+                effectToggleColumn.appendChild(btn);
+            });
+        });
+        </script>
+</body>
+</html>

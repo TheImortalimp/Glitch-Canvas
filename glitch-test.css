@@ -1,0 +1,429 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+body {
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+}
+#glitch-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 0;
+}
+#hue-bg {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+.glitch-canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    pointer-events: none;
+}
+
+#bg-custom {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+#custom-bg-panel {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2100;
+    background: rgba(20, 20, 20, 0.98);
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 18px 18px 12px 18px;
+    box-shadow: 0 4px 24px #000;
+    max-width: 600px;
+}
+
+.custom-bg-panel-header {
+    font-family: 'Courier New', monospace;
+    color: #fff;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+#custom-bg-thumbnails {
+    display: grid;
+    grid-template-columns: repeat(10, 48px);
+    grid-template-rows: repeat(5, 48px);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#custom-bg-file {
+    margin-bottom: 10px;
+}
+
+#custom-bg-apply-btn {
+    display: block;
+    margin: 10px auto 0 auto;
+    padding: 0.5em 1.2em;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    background: #222;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.custom-bg-panel-footer {
+    font-size: 0.95em;
+    color: #ccc;
+}
+
+#null-speed-btn,
+#null-opacity-btn {
+    margin-right: 8px;
+}
+
+.effect-toggle-btn.active {
+    border-color: #0f0 !important;
+    color: #0f0 !important;
+}
+
+.effect-toggle-btn:active, .effect-toggle-btn.active {
+    background: #000;
+    color: #ffc800;
+    border-color: #fff;
+}
+
+#freeze-frame-btn-container {
+    opacity: 0.55;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2101;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+}
+#freeze-frame-btn {
+    opacity: 0.55;
+    font-size: 1.1em;
+    padding: 0.5em 1.2em;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    background: #222;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+#freeze-frame-btn:hover {
+    background: #444;
+    color: #ff0;
+}
+#custom-bg-thumbnails img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+#custom-bg-thumbnails img.selected {
+    border: 2px solid #ff0;
+    box-shadow: 0 0 8px #ff0;
+}
+#custom-bg-btn-container {
+    opacity: 0.55;
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    z-index: 2001;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: auto;
+    height: auto;
+    background: none;
+    padding: 0;
+    margin: 0;
+}
+.custom-bg-btn {
+    opacity: 0.55;
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    z-index: 20;
+    font-size: 1.1em;
+    padding: 0.5em 1.2em;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    background: #222;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.custom-bg-btn:hover {
+    background: #444;
+    color: #ff0;
+}
+
+/* Glitch Slider Theme Styles */
+/* --- UI Toggle Tab Styles (CRT Themed) --- */
+#ui-toggle-tab {
+    position: fixed;
+    right: -145px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 9999;
+    transition: right 0.3s ease-in-out, opacity 0.2s ease-in-out;
+    cursor: pointer;
+    opacity: 0.4;
+}
+#ui-toggle-tab:hover, #ui-toggle-tab.show {
+    right: 0;
+    opacity: 1;
+}
+#toggle-ui-btn {
+    font-family: 'Courier New', Courier, monospace;
+    text-decoration: none;
+    color: #ffea01;
+    background: rgba(0, 20, 20, 0.7);
+    border: 2px solid #ffc800;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    box-shadow: 0 0 10px rgba(0, 255, 17, 0.5), 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.2);
+    text-shadow: 0 0 4px #00ff1a, 0 0 8px #00ffff;
+    animation: crt-flicker 0.2s infinite;
+    font-size: 1.1em;
+    padding: 0.5em 1.2em;
+    cursor: pointer;
+}
+#toggle-ui-btn:active {
+    background: #222;
+    color: #ff0;
+}
+@keyframes crt-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+#ui-toggle-tab.hide { display: none !important; }
+
+#glitch-speed-bar {
+    opacity: 0.55;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 45px;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0);
+    padding: 8px 0 4px 0;
+    text-align: center;
+    margin-bottom: 12px;
+}
+#glitch-speed-bar label {
+    color: #ff0;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    margin-right: 8px;
+}
+#glitch-speed-slider {
+    width: 220px;
+    vertical-align: middle;
+}
+#glitch-opacity-bar {
+    opacity: 0.55;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0);
+    padding: 8px 0 4px 0;
+    text-align: center;
+}
+#glitch-opacity-bar label {
+    color: #ff0;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    margin-right: 8px;
+}
+#glitch-opacity-slider {
+    width: 220px;
+    vertical-align: middle;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 2100;
+}
+/* Glitch Slider Theme Styles */
+/* Yellow and black slider styling for all browsers */
+#glitch-speed-slider, #glitch-opacity-slider {
+    accent-color: #ffc800; /* fallback for modern browsers */
+}
+/* Webkit browsers (Chrome, Safari, Edge) */
+#glitch-speed-slider::-webkit-slider-runnable-track,
+#glitch-opacity-slider::-webkit-slider-runnable-track {
+    height: 8px;
+    background: #ffc800;
+    border-radius: 4px;
+}
+#glitch-speed-slider::-webkit-slider-thumb,
+#glitch-opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    background: #111;
+    border: 2px solid #ffc800;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #ffc80099;
+    cursor: pointer;
+    margin-top: -7px;
+    transition: background 0.2s, border 0.2s;
+}
+#glitch-speed-slider:focus::-webkit-slider-thumb,
+#glitch-opacity-slider:focus::-webkit-slider-thumb {
+    background: #222;
+    border-color: #fff200;
+}
+/* Firefox */
+#glitch-speed-slider::-moz-range-track,
+#glitch-opacity-slider::-moz-range-track {
+    height: 8px;
+    background: #ffc800;
+    border-radius: 4px;
+}
+#glitch-speed-slider::-moz-range-thumb,
+#glitch-opacity-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: #111;
+    border: 2px solid #ffc800;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #ffc80099;
+    cursor: pointer;
+    transition: background 0.2s, border 0.2s;
+}
+#glitch-speed-slider:focus::-moz-range-thumb,
+#glitch-opacity-slider:focus::-moz-range-thumb {
+    background: #222;
+    border-color: #fff200;
+}
+/* Edge/IE */
+#glitch-speed-slider::-ms-fill-lower,
+#glitch-opacity-slider::-ms-fill-lower {
+    background: #ffc800;
+}
+#glitch-speed-slider::-ms-fill-upper,
+#glitch-opacity-slider::-ms-fill-upper {
+    background: #ffc800;
+}
+#glitch-speed-slider::-ms-thumb,
+#glitch-opacity-slider::-ms-thumb {
+    width: 22px;
+    height: 22px;
+    background: #111;
+    border: 2px solid #ffc800;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #ffc80099;
+    cursor: pointer;
+    transition: background 0.2s, border 0.2s;
+}
+#glitch-speed-slider:focus::-ms-thumb,
+#glitch-opacity-slider:focus::-ms-thumb {
+    background: #222;
+    border-color: #fff200;
+}
+#glitch-speed-slider,
+#glitch-opacity-slider {
+    outline: none;
+}
+/* Glitch Toggle Button Theme */
+.glitch-toggle-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    padding: 0.5em 1.2em;
+    border-radius: 8px;
+    border: 2px solid #ffc800;
+    background: #111;
+    color: #fff;
+    margin-right: 8px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.1);
+}
+.glitch-toggle-btn:hover {
+    background: #222;
+    color: #ff0;
+    border-color: #fff200;
+}
+.glitch-toggle-btn:active {
+    background: #000;
+    color: #ffc800;
+    border-color: #fff;
+}
+
+/* Effect Toggle Button Column */
+#effect-toggle-column {
+    position: fixed;
+    top: 95px;
+    left: 0;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(0,0,0,0.18);
+    padding: 8px 2px 8px 1px;
+    border-radius: 0 10px 10px 0;
+    box-shadow: 2px 0 10px #0008;
+    max-height: 960px;
+    overflow-y: auto;
+}
+.effect-toggle-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 0.92em;
+    padding: 0.25em 0.7em;
+    border-radius: 7px;
+    border: 2px solid #ffc800;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+    box-shadow: 0 0 7px rgba(255, 255, 0, 0.08);
+    margin-bottom: 0px;
+    opacity: 0.55;
+    min-width: 90px;
+    max-width: 120px;
+}
+.effect-toggle-btn:hover {
+    background: #222;
+    color: #ff0;
+    border-color: #fff200;
+}
+
+.effect-toggle-btn:active, .effect-toggle-btn.active {
+    background: #000;
+    color: #ffc800;
+    border-color: #fff;
+}
