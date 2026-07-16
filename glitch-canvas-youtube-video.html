@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Glitch Canvas YouTube — UI Test</title>
-  <link rel="stylesheet" href="glitch-canvas-youtube.css?v=3">
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://www.youtube.com/iframe_api"></script>
+  <title>Glitch Canvas YouTube</title>
+  <link rel="stylesheet" href="glitch-canvas-youtube-video.css">
 </head>
 <body>
   <svg width="0" height="0" class="background-svg">
@@ -16,8 +14,7 @@
       <feTurbulence id="ai-turbulence-small" type="turbulence" baseFrequency="0.05" numOctaves="2" seed="2" result="small_noise"/>
       <feDisplacementMap in="large_noise" in2="small_noise" scale="40" result="warped_noise"/>
       <feDisplacementMap id="ai-displacement" in="SourceGraphic" in2="warped_noise" scale="0" xChannelSelector="R" yChannelSelector="G" result="displaced_video"/>
-      <feBlend in="SourceGraphic" in2="displaced_video" mode="screen" result="warped_blend"/>
-      <feColorMatrix id="ai-color-matrix" in="warped_blend" type="hueRotate" values="0"/>
+      <feColorMatrix id="ai-color-matrix" in="displaced_video" type="hueRotate" values="0"/>
       <!-- All color/rainbow/blotch/gradient effects removed -->
     </filter>
   </svg>
@@ -55,32 +52,22 @@
 <h2 id="suggestedVideo2">SUGGESTED *.* : https://www.youtube.com/watch?v=8o6bdTOhIyE</h2>
 <h2 id="suggestedPlaylist">SUGGESTED PLAYLIST : https://www.youtube.com/watch?v=RgFaK6ZQifE&list=RDEMWUbu7UjvrEYUSE4m8ATOcw&start_radio=1</h2>
 <h2 id="suggestedYoutube">SUGGESTED YOUTUBE : https://www.youtube.com/watch?v=8hGxNwyH3LI</h2>
-<h2 id="Defcon1Video">DEFCON 1</h2>
 <h2 id="testCanvas">Fade "WHITE 2 BLACK 2 WHITE"</h2>
 <div id="effects-wrapper">
-<video id="video"></video>
-<div id="ytWarpShell"><div id="ytFrame"><div id="ytPlayerMount"></div></div></div>
+<iframe id="ytFrame" allow="autoplay; encrypted-media" allowfullscreen title="YouTube Video Player with Glitch Effects"></iframe>
 <canvas id="glitchCanvas"></canvas>
 </div>
 <a href="/index.html" id="wired-btn" class="wired-button"><strong>&lt;-WIRED</strong></a>
 
 <input id="ytInput" type="text" placeholder="Paste YouTube Link Here" />
 <button id="startBtn">Start and Play</button>
-<button id="openFileBtn">Open Local Video</button>
-<label for="fileInput" class="visually-hidden">Select a local video file</label>
-<input type="file" id="fileInput" accept="video/*" title="Select a local video file" />
 <button id="randomizeBtn" class="wired-button">Randomize</button>
 <button id="autoGlitchBtn" class="wired-button">Auto Glitch: OFF</button>
 <button id="continualRandomizeBtn" class="wired-button">Continual Randomization: OFF</button>
 <button id="aiWarpBtn" class="wired-button">AI Video Warp: OFF</button>
-<button id="ghostProtocolBtn" class="wired-button ghost-protocol-button">GHOST PROTOCOL: OFF</button>
 
 <!-- Container for individual alpha sliders -->
 <div id="sliderContainer">
-  <div class="slider-group">
-    <label for="ghostProtocolSlider">Ghost Protocol:</label>
-    <input type="range" min="0" max="1" step="0.01" value="1" id="ghostProtocolSlider">
-  </div>
   <div class="slider-group">
     <label for="randomSeedSlider">Random:</label>
     <input type="range" min="0" max="1" step="0.001" value="0" id="randomSeedSlider">
@@ -92,62 +79,9 @@
 <script>
 const glitchCanvas = document.getElementById('glitchCanvas');
 const gctx = glitchCanvas.getContext('2d');
-const ghostCanvas = document.createElement('canvas');
-const ghostCtx = ghostCanvas.getContext('2d');
-const ghostFxCanvas = document.createElement('canvas');
-const ghostFxCtx = ghostFxCanvas.getContext('2d');
-const ytWarpShell = document.getElementById('ytWarpShell');
 const ytFrame = document.getElementById('ytFrame');
-const ytPlayerMount = document.getElementById('ytPlayerMount');
-const video = document.getElementById('video');
 const ytInput = document.getElementById('ytInput');
 const startBtn = document.getElementById('startBtn');
-const openFileBtn = document.getElementById('openFileBtn');
-const fileInput = document.getElementById('fileInput');
-
-openFileBtn.addEventListener('click', () => {
-  fileInput.click();
-});
-
-fileInput.addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const url = URL.createObjectURL(file);
-    video.src = url;
-    video.loop = true;
-    video.addEventListener('canplay', () => {
-      video.style.display = 'block';
-      ytWarpShell.style.display = 'none';
-      ytInput.style.display = 'none';
-      startBtn.style.display = 'none';
-      suggestedVideo.style.display = 'none';
-      suggestedPlaylist.style.display = 'none';
-      suggestedVideo3.style.display = 'none';
-      suggestedVideo2.style.display = 'none';
-      suggestedYoutube.style.display = 'none';
-      testCanvas.style.display = 'none';
-      openFileBtn.style.display = 'none';
-      defcon1Video.style.display = 'none';
-
-      // Show all UI elements (sliders, buttons, preset menu, etc.)
-      randomizeBtn.style.display = 'block';
-      autoGlitchBtn.style.display = 'block';
-      continualRandomizeBtn.style.display = 'block';
-      aiWarpBtn.style.display = 'block';
-      sliderContainer.style.display = 'block';
-      document.getElementById('preset-toggle-btn').style.display = 'block';
-      // If you have a preset dropdown container, show it as well (optional)
-      // document.getElementById('preset-dropdown-container').style.display = 'block';
-
-      glitchCanvas.style.zIndex = '2';
-      video.play();
-      if (!isLooping) {
-        mainRenderLoop();
-      }
-    }, { once: true });
-  }
-});
-
 const randomizeBtn = document.getElementById('randomizeBtn');
 const autoGlitchBtn = document.getElementById('autoGlitchBtn');
 const continualRandomizeBtn = document.getElementById('continualRandomizeBtn');
@@ -157,7 +91,10 @@ const aiWarpBtn = document.getElementById('aiWarpBtn');
 const feTurbulenceLarge = document.getElementById('ai-turbulence-large');
 const feTurbulenceSmall = document.getElementById('ai-turbulence-small');
 const feDisplacement = document.getElementById('ai-displacement');
+const feColorTurbulence = document.getElementById('ai-color-turbulence');
 const feColorMatrix = document.getElementById('ai-color-matrix');
+const gradStop1 = document.getElementById('grad-stop1');
+const gradStop2 = document.getElementById('grad-stop2');
 let isAiWarpActive = false;
 const randomSeedSlider = document.getElementById('randomSeedSlider');
 const sliderContainer = document.getElementById('sliderContainer');
@@ -166,19 +103,8 @@ const suggestedPlaylist = document.getElementById('suggestedPlaylist');
 const suggestedVideo3 = document.getElementById('suggestedVideo3');
 const suggestedVideo2 = document.getElementById('suggestedVideo2');
 const suggestedYoutube = document.getElementById('suggestedYoutube');
-const defcon1Video = document.getElementById('Defcon1Video');
 const testCanvas = document.getElementById('testCanvas');
-// DEFCON 1 link click handler
-defcon1Video.addEventListener('click', function() {
-    startPlayback('https://www.youtube.com/watch?v=jmEAP7aGo0o');
-});
 const wiredBtn = document.getElementById('wired-btn'); // Get reference to the wired button
-const ghostProtocolBtn = document.getElementById('ghostProtocolBtn');
-const ghostProtocolSlider = document.getElementById('ghostProtocolSlider');
-const ghostProtocolModes = ['OFF', 'SPECTRUM', 'CRT', 'PLASMA'];
-let ghostProtocolModeIndex = 0;
-let ghostProtocolActive = false;
-let ghostProtocolLevel = parseFloat(ghostProtocolSlider?.value ?? 1);
 
 // UI Toggle elements
 const uiToggleTab = document.getElementById('ui-toggle-tab');
@@ -188,45 +114,8 @@ let autoGlitch = false;
 let autoGlitchInterval = null;
 let isContinuallyRandomizing = false;
 let randomTargetAlphas = {};
-let ghostProtocolRandomTarget = ghostProtocolLevel;
 const randomizationSpeed = 0.5; // Controls speed, approx. seconds to traverse full range
-let randomizationBehavior = 'steady';
-let nextRandomizationBehaviorChange = performance.now() + 4000 + Math.random() * 5000;
 let masterBeat = 0;
-let triggerTimestamps = {}; // For rate limiting trigger buttons
-
-function getGhostProtocolMode() {
-  return ghostProtocolModes[ghostProtocolModeIndex] || 'OFF';
-}
-
-function updateGhostProtocolUi() {
-  const mode = getGhostProtocolMode();
-  ghostProtocolActive = mode !== 'OFF';
-  document.body.classList.toggle('ghost-protocol-active', ghostProtocolActive);
-  if (!ghostProtocolBtn) return;
-  ghostProtocolBtn.classList.toggle('active', ghostProtocolActive);
-  ghostProtocolBtn.textContent = ghostProtocolActive
-    ? `GHOST PROTOCOL: ${mode} (${Math.round(ghostProtocolLevel * 100)}%)`
-    : 'GHOST PROTOCOL: OFF';
-}
-
-function toggleGhostProtocol() {
-  ghostProtocolModeIndex = (ghostProtocolModeIndex + 1) % ghostProtocolModes.length;
-  updateGhostProtocolUi();
-}
-
-if (ghostProtocolSlider) {
-  ghostProtocolSlider.addEventListener('input', (event) => {
-    ghostProtocolLevel = parseFloat(event.target.value);
-    updateGhostProtocolUi();
-  });
-}
-
-if (ghostProtocolBtn) {
-  ghostProtocolBtn.addEventListener('click', toggleGhostProtocol);
-}
-
-updateGhostProtocolUi();
 
 function createSeededRandom(seed) {
   return function() {
@@ -234,197 +123,19 @@ function createSeededRandom(seed) {
     return seed / 233280;
   };
 }
-
-function isHttpOrigin() {
-  return window.location.protocol === 'http:' || window.location.protocol === 'https:';
-}
-
-function showNotificationMessage(message, duration = 3600) {
-  let notification = document.querySelector('.notification');
-  if (!notification) {
-    notification = document.createElement('div');
-    notification.className = 'notification';
-    document.body.appendChild(notification);
-  }
-  notification.textContent = message;
-  notification.style.display = 'block';
-  notification.style.opacity = '1';
-  window.clearTimeout(showNotificationMessage.hideTimer);
-  showNotificationMessage.hideTimer = window.setTimeout(() => {
-    notification.style.opacity = '0';
-    window.setTimeout(() => {
-      notification.style.display = 'none';
-    }, 500);
-  }, duration);
-}
 let lastFrameTime = performance.now();
-let lastRefreshEffectsTime = performance.now();
 let customTime = 0;
 let timeScale = 1.0;
 let masterOpacity = 1.0;
 let activeEffects = [];
 let isLooping = false;
-let techArtistShader = null;
-let techArtistMouse = { x: 0.5, y: 0.5 };
-let techArtistLastMouse = { x: 0.5, y: 0.5 };
-let techArtistVelocity = { x: 0.0, y: 0.0 };
-// Page scale is disabled so effects always match the real display/container size.
-const effectsWrapper = document.getElementById('effects-wrapper');
-
-function setPageScale(s) {
-  if (effectsWrapper) {
-    effectsWrapper.style.transform = 'scale(1)';
-  }
-}
-
-// Mouse wheel zoom is disabled to keep effects mapped to actual screen/container size.
-window.addEventListener('wheel', (ev) => {
-  if (!ev.ctrlKey) return;
-  ev.preventDefault();
-}, { passive: false });
-
-// Keyboard shortcut kept only for compatibility, but the page remains at native scale.
-window.addEventListener('keydown', (ev) => {
-  if (ev.ctrlKey && (ev.key === '0' || ev.key === 'Reset')) {
-    ev.preventDefault();
-    setPageScale(1.0);
-  }
-});
-
-function initTechArtistShader() {
-  if (techArtistShader || !window.THREE) return techArtistShader;
-
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000000);
-  const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  const uniforms = {
-    time: { value: 0 },
-    resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-    mouse: { value: new THREE.Vector2(techArtistMouse.x, techArtistMouse.y) },
-    velocity: { value: new THREE.Vector2(techArtistVelocity.x, techArtistVelocity.y) }
-  };
-
-  const material = new THREE.ShaderMaterial({
-    uniforms,
-    transparent: true,
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform float time;
-      uniform vec2 resolution;
-      uniform vec2 mouse;
-      uniform vec2 velocity;
-      varying vec2 vUv;
-
-      mat2 rot(float a) {
-        float s = sin(a);
-        float c = cos(a);
-        return mat2(c, -s, s, c);
-      }
-
-      void main() {
-        vec2 FC = gl_FragCoord.xy;
-        vec2 r = resolution;
-        float t = time;
-        vec4 o = vec4(0.0);
-
-        vec2 uv = (FC * 2.0 - r.xy) / r.y;
-        vec2 m = (mouse - 0.5);
-        float vmag = length(velocity);
-        vec2 warp = m * 0.35 + velocity * 0.4;
-        uv += warp * (0.6 + 0.4 * sin(t * 0.6));
-        vec3 rayDir = normalize(vec3(uv, 1.0 + vmag * 0.8));
-
-        for(float i = 0.0; i < 20.0; i++) {
-          float z = i * 0.5 + 0.1;
-
-          vec3 p = z * rayDir;
-          vec2 mouseOffset = m * (1.4 + vmag * 2.0);
-
-          p.xz *= rot(t * 0.2 + mouseOffset.x + velocity.x * 2.0);
-          p.yz *= rot(t * 0.15 + mouseOffset.y + velocity.y * 2.0);
-          p.xy *= rot(sin(t * 0.35 + z * 0.6 + vmag * 5.0) * 0.25);
-          vec3 a = p;
-
-          float d;
-          for(d = 1.0; d < 4.0; d += 1.0) {
-            a -= sin(a * d + t + i*0.1).yzx / (d * 0.8);
-          }
-
-          vec3 q = abs(a);
-          float mx = max(max(q.x, q.y), q.z);
-          float s = a.z + a.y - t;
-
-          d = abs(2.0 - mx) + abs(cos(s)) / 7.0;
-
-          float z_col = z + d;
-
-          float hueWarp = (m.x - m.y) * 2.0 + vmag * 3.0;
-          vec4 colorPhase = vec4(0.0 + hueWarp,
-                                 2.0 + mouse.y * 2.5 + vmag * 2.0,
-                                 4.0 - mouse.y * 2.5 - vmag * 2.0,
-                                 0.0 + hueWarp * 0.5);
-
-          o += (cos(s - z_col + colorPhase) + 1.0) / (d * (0.5 + vmag * 0.6) + 0.01);
-        }
-
-        o = o / 20.0;
-        o = o / (1.0 + o);
-
-        o = smoothstep(0.15, 0.85, o);
-
-        gl_FragColor = o;
-        gl_FragColor.a = 1.0;
-      }
-    `
-  });
-
-  const geometry = new THREE.PlaneGeometry(2, 2);
-  const mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
-
-  techArtistShader = { renderer, scene, camera, uniforms, canvas: renderer.domElement };
-  return techArtistShader;
-}
-
-function updateTechArtistShaderSize(width, height) {
-  if (!techArtistShader) return;
-  techArtistShader.renderer.setSize(width, height);
-  techArtistShader.uniforms.resolution.value.set(width, height);
-}
 
 function resize() {
-  resizeGlitchCanvas();
-  updateTechArtistShaderSize(glitchCanvas.width, glitchCanvas.height);
+  glitchCanvas.width = window.innerWidth;
+  glitchCanvas.height = window.innerHeight;
 }
 resize();
 window.addEventListener('resize', resize);
-
-window.addEventListener('mousemove', (event) => {
-  const newX = event.clientX / window.innerWidth;
-  const newY = 1.0 - (event.clientY / window.innerHeight);
-  const dx = newX - techArtistLastMouse.x;
-  const dy = newY - techArtistLastMouse.y;
-
-  techArtistMouse = { x: newX, y: newY };
-  techArtistLastMouse = { x: newX, y: newY };
-
-  techArtistVelocity.x = Math.max(-1, Math.min(1, dx * 6));
-  techArtistVelocity.y = Math.max(-1, Math.min(1, dy * 6));
-  if (techArtistShader) {
-    techArtistShader.uniforms.mouse.value.set(techArtistMouse.x, techArtistMouse.y);
-    techArtistShader.uniforms.velocity.value.set(techArtistVelocity.x, techArtistVelocity.y);
-  }
-});
 
 function createTimedEffect(fn, duration = 3000 + Math.random() * 3000) {
   const startTime = performance.now();
@@ -1555,30 +1266,6 @@ function glitchGeminiBombFactory(getStrength, isPersistent = false) {
   return isPersistent ? renderFn : createTimedEffect(renderFn);
 }
 
-function glitchTechArtistShaderFactory(getStrength, isPersistent = false) {
-  const renderFn = () => {
-    const strength = getStrength();
-    if (strength <= 0) return;
-    const shader = initTechArtistShader();
-    if (!shader) return;
-
-    techArtistVelocity.x *= 0.92;
-    techArtistVelocity.y *= 0.92;
-
-    shader.uniforms.time.value = customTime * 0.002;
-    shader.uniforms.mouse.value.set(techArtistMouse.x, techArtistMouse.y);
-    shader.uniforms.velocity.value.set(techArtistVelocity.x, techArtistVelocity.y);
-    shader.renderer.render(shader.scene, shader.camera);
-
-    gctx.save();
-    gctx.globalCompositeOperation = 'screen';
-    gctx.globalAlpha = Math.min(0.75, strength * 0.75);
-    gctx.drawImage(shader.canvas, 0, 0, glitchCanvas.width, glitchCanvas.height);
-    gctx.restore();
-  };
-  return isPersistent ? renderFn : createTimedEffect(renderFn);
-}
-
 
 
 const timedEffectsDefs = [
@@ -1590,7 +1277,6 @@ const timedEffectsDefs = [
   { name: 'Font Burn', factory: glitchFontBurnFactory, defaultAlpha: 1.0 },
   { name: 'Strobe', factory: glitchStrobeFactory, defaultAlpha: 1.0 },
   { name: 'Gemini Bomb', factory: glitchGeminiBombFactory, defaultAlpha: 0.9 },
-  { name: 'Tech Artist', factory: glitchTechArtistShaderFactory, defaultAlpha: 0.5 },
   { name: 'Data Bands', factory: glitchVHSFactory, defaultAlpha: 0.0 },
   { name: 'VHS Glitch', factory: glitchVHSGlitchFactory, defaultAlpha: 0.0 },
 ];
@@ -1604,101 +1290,6 @@ const allEffectDefinitions = [...timedEffectsDefs, ...instantEffectsDefs, dataBo
 const effectAlphas = {};
 const sliderElements = {};
 const sliderLocks = {}; // Object to store lock states
-
-function getYouTubeIframeElement() {
-  if (player && typeof player.getIframe === 'function') {
-    const liveIframe = player.getIframe();
-    if (liveIframe) return liveIframe;
-  }
-  return ytFrame && ytFrame.querySelector ? ytFrame.querySelector('iframe') : null;
-}
-
-function applyYouTubeSurfaceFilters(hueFilter = '') {
-  const baseYoutubeFilter = 'brightness(0.9) contrast(1.1)';
-  const iframeFilters = [baseYoutubeFilter];
-  const shellFilters = [baseYoutubeFilter];
-
-  if (hueFilter) {
-    iframeFilters.push(hueFilter);
-    shellFilters.push(hueFilter);
-  }
-
-  if (isAiWarpActive) {
-    iframeFilters.push('saturate(1.35)', 'contrast(1.08)', 'brightness(1.02)');
-    shellFilters.push('saturate(1.25)', 'contrast(1.06)', 'brightness(1.01)', 'sepia(0.08)');
-  }
-
-  if (ytWarpShell) {
-    const shellFilterValue = shellFilters.join(' ');
-    ytWarpShell.style.filter = shellFilterValue;
-    ytWarpShell.style.webkitFilter = shellFilterValue;
-    ytWarpShell.style.willChange = 'filter, transform';
-  }
-
-  const filterValue = iframeFilters.join(' ');
-  const surfaces = [ytFrame, getYouTubeIframeElement()].filter(Boolean);
-  surfaces.forEach((surface) => {
-    surface.style.filter = filterValue;
-    surface.style.webkitFilter = filterValue;
-    surface.style.willChange = 'filter, transform';
-  });
-}
-
-function applyYouTubeWarpMotion(currentTime, hueStrength = 0) {
-  const iframe = getYouTubeIframeElement();
-  const surfaces = [ytWarpShell, ytFrame, iframe].filter(Boolean);
-
-  if (!isAiWarpActive) {
-    surfaces.forEach((surface) => {
-      surface.style.transform = 'translate3d(0, 0, 0) scale(1) skew(0deg, 0deg)';
-      surface.style.transformOrigin = '50% 50%';
-    });
-    return;
-  }
-
-  const t = currentTime * 0.001;
-  const liquidDriftX = Math.sin(t * 0.34) * 4.5 + Math.sin(t * 0.11 + 0.8) * 2.8;
-  const liquidDriftY = Math.cos(t * 0.28 + 1.1) * 3.2;
-  const shellSkewX = Math.sin(t * 0.42 + Math.cos(t * 0.18)) * 1.2;
-  const shellSkewY = Math.cos(t * 0.31 + 0.6) * 0.65;
-  const crunchScaleX = 1.03 + Math.sin(t * 0.24 + 1.7) * 0.02 + hueStrength * 0.018;
-  const crunchScaleY = 1.03 - Math.sin(t * 0.24 + 1.7) * 0.014 - hueStrength * 0.01;
-  const jitterX = Math.sin(t * 2.4) * 0.9 + Math.cos(t * 3.8) * 0.45;
-  const jitterY = Math.cos(t * 2.2 + 0.5) * 0.7;
-
-  if (ytWarpShell) {
-    ytWarpShell.style.transformOrigin = '50% 50%';
-    ytWarpShell.style.transform = `translate3d(${liquidDriftX.toFixed(3)}px, ${liquidDriftY.toFixed(3)}px, 0) scale(${crunchScaleX.toFixed(4)}, ${crunchScaleY.toFixed(4)}) skew(${shellSkewX.toFixed(3)}deg, ${shellSkewY.toFixed(3)}deg)`;
-  }
-
-  if (ytFrame) {
-    const frameWaveX = Math.sin(t * 0.82 + 0.4) * 2.2 + jitterX * 0.45;
-    const frameWaveY = Math.cos(t * 0.63 + 0.9) * 1.6 + jitterY * 0.35;
-    const frameScaleX = 1.012 + Math.sin(t * 0.51 + 0.2) * 0.01;
-    const frameScaleY = 1.012 - Math.sin(t * 0.51 + 0.2) * 0.008;
-    const frameSkewX = Math.sin(t * 0.95 + 0.4) * 0.85;
-    const frameSkewY = Math.cos(t * 0.71 + 1.1) * 0.45;
-    ytFrame.style.transformOrigin = '50% 50%';
-    ytFrame.style.transform = `translate3d(${frameWaveX.toFixed(3)}px, ${frameWaveY.toFixed(3)}px, 0) scale(${frameScaleX.toFixed(4)}, ${frameScaleY.toFixed(4)}) skew(${frameSkewX.toFixed(3)}deg, ${frameSkewY.toFixed(3)}deg)`;
-  }
-
-  if (iframe) {
-    const innerWaveX = Math.sin(t * 1.35 + 0.9) * 3.8 + jitterX;
-    const innerWaveY = Math.cos(t * 1.08 + 0.3) * 2.1 + jitterY;
-    const innerScaleX = 1.02 + Math.cos(t * 0.72) * 0.016 + hueStrength * 0.012;
-    const innerScaleY = 1.02 - Math.cos(t * 0.72) * 0.012 - hueStrength * 0.007;
-    const innerSkewX = Math.sin(t * 1.62 + 0.4) * 1.3;
-    const innerSkewY = Math.cos(t * 0.84 + 1.2) * 0.75;
-    iframe.style.transformOrigin = '50% 50%';
-    iframe.style.transform = `translate3d(${innerWaveX.toFixed(3)}px, ${innerWaveY.toFixed(3)}px, 0) scale(${innerScaleX.toFixed(4)}, ${innerScaleY.toFixed(4)}) skew(${innerSkewX.toFixed(3)}deg, ${innerSkewY.toFixed(3)}deg)`;
-  }
-}
-
-function triggerTimedEffect(def) {
-  const getStrength = () => effectAlphas[def.name] * masterOpacity;
-  const timedEffect = def.factory(getStrength);
-  activeEffects.push(timedEffect);
-}
 
 function applyMasterFilters() {
     const wrapper = document.body;
@@ -1716,234 +1307,18 @@ function applyMasterFilters() {
     }
 
     // Hue/Color Cycle Logic
-    const hueStrength = (effectAlphas['Hue/Color Cycle'] ?? 0) * masterOpacity;
-    let hueFilter = '';
-    if (!isAiWarpActive && hueStrength > 0.01) {
-      const angle = hueStrength * 360;
-      hueFilter = `hue-rotate(${angle}deg)`;
-      filters.push(hueFilter);
-    }
-
-    wrapper.style.filter = filters.length > 0 ? filters.join(' ') : 'none';
-
-    applyYouTubeSurfaceFilters(hueFilter);
-}
-
-function resizeGlitchCanvas() {
-  // Default CSS size (will be overridden by video/iframe sizes when available)
-  let cssWidth = window.innerWidth;
-  let cssHeight = window.innerHeight;
-
-  const getBounds = (element) => {
-    if (!element || !element.getBoundingClientRect) return null;
-    const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0 ? rect : null;
-  };
-
-  try {
-    const visibleContainer = (video && video.style && video.style.display !== 'none') ? video : ytWarpShell;
-    const iframe = getYouTubeIframeElement();
-    const rect = getBounds(video && video.style.display !== 'none' ? video : iframe || ytFrame || ytWarpShell);
-
-    if (rect) {
-      cssWidth = Math.round(rect.width);
-      cssHeight = Math.round(rect.height);
-    } else if (window.visualViewport) {
-      cssWidth = Math.round(window.visualViewport.width);
-      cssHeight = Math.round(window.visualViewport.height);
-    }
-  } catch (e) {
-    cssWidth = window.innerWidth;
-    cssHeight = window.innerHeight;
-  }
-
-  // Use CSS pixels for the buffer so all effect functions remain mapped to screen size.
-  const width = Math.max(1, Math.floor(cssWidth));
-  const height = Math.max(1, Math.floor(cssHeight));
-  if (glitchCanvas.width !== width || glitchCanvas.height !== height) {
-    glitchCanvas.width = width;
-    glitchCanvas.height = height;
-    ghostCanvas.width = width;
-    ghostCanvas.height = height;
-    ghostFxCanvas.width = width;
-    ghostFxCanvas.height = height;
-  }
-  gctx.setTransform(1, 0, 0, 1, 0, 0);
-  ghostCtx.setTransform(1, 0, 0, 1, 0, 0);
-  ghostFxCtx.setTransform(1, 0, 0, 1, 0, 0);
-  glitchCanvas.style.width = `${cssWidth}px`;
-  glitchCanvas.style.height = `${cssHeight}px`;
-}
-
-function renderGhostProtocol(now) {
-  const mode = getGhostProtocolMode();
-  if (mode === 'OFF' || !ghostProtocolActive || ghostProtocolLevel <= 0.01) return;
-  if (ghostCanvas.width !== glitchCanvas.width || ghostCanvas.height !== glitchCanvas.height) return;
-
-  const width = glitchCanvas.width;
-  const height = glitchCanvas.height;
-  const t = now * 0.001;
-  const baseStrength = Math.min(1, ghostProtocolLevel * 1.2);
-  const intensity = baseStrength * masterOpacity * 0.02; // Keep max effective intensity to 2%.
-  if (intensity <= 0) return;
-
-  const modeProfile = {
-    SPECTRUM: { split: 1.0, blur: 1.0, chan: 1.0, lines: 1.0, glow: 1.0, warp: 1.0, curve: 1.0, hueA: 120, hueB: 70, sat: 1.3, crt: 0 },
-    CRT:      { split: 0.7, blur: 0.8, chan: 0.7, lines: 1.5, glow: 0.8, warp: 0.45, curve: 0.75, hueA: 55,  hueB: 25, sat: 0.8, crt: 1 },
-    PLASMA:   { split: 1.2, blur: 1.25, chan: 1.15, lines: 0.8, glow: 1.35, warp: 1.4, curve: 1.25, hueA: 180, hueB: 95, sat: 1.8, crt: 0 }
-  }[mode] || { split: 1, blur: 1, chan: 1, lines: 1, glow: 1, warp: 1, curve: 1, hueA: 120, hueB: 70, sat: 1.3, crt: 0 };
-
-  const splitOffset = (1 + intensity * 180) * modeProfile.split;
-  const smear = (0.35 + intensity * 45) * modeProfile.blur;
-  const channelAlpha = Math.min(0.2, (0.035 + intensity * 8.5) * modeProfile.chan);
-  const lineAlpha = Math.min(0.12, (0.02 + intensity * 5.2) * modeProfile.lines);
-  const glowAlpha = Math.min(0.11, (0.02 + intensity * 4.2) * modeProfile.glow);
-  const warpAlpha = Math.min(0.12, (0.01 + intensity * 5.6) * modeProfile.warp);
-  const curveAlpha = Math.min(0.1, (0.02 + intensity * 4.8) * modeProfile.curve);
-
-  ghostFxCtx.clearRect(0, 0, width, height);
-  ghostFxCtx.save();
-  ghostFxCtx.globalCompositeOperation = 'source-over';
-  ghostFxCtx.globalAlpha = 1;
-  // Pre-pass: hue cycle + saturation + contrast boost to create a distinct ghost palette.
-  const hueDeg = (Math.sin(t * 0.8) * modeProfile.hueA + Math.cos(t * 0.33) * modeProfile.hueB + 190);
-  const crtGray = modeProfile.crt ? (0.55 + baseStrength * 0.35) : (0.25 + baseStrength * 0.45);
-  ghostFxCtx.filter = `grayscale(${crtGray}) hue-rotate(${hueDeg.toFixed(2)}deg) saturate(${1.1 + baseStrength * modeProfile.sat}) contrast(${1 + baseStrength * 0.95}) brightness(${1 + baseStrength * 0.35})`;
-  ghostFxCtx.drawImage(ghostCanvas, 0, 0, width, height);
-  ghostFxCtx.restore();
-  ghostFxCtx.filter = 'none';
-
-  gctx.save();
-
-  // Pass 1: RGB channel split with soft blur drift.
-  gctx.globalCompositeOperation = 'screen';
-  gctx.globalAlpha = channelAlpha;
-  gctx.filter = `blur(${smear}px)`;
-  gctx.drawImage(ghostFxCanvas, -splitOffset, 0, width, height);
-  gctx.drawImage(ghostFxCanvas, splitOffset * 0.8, splitOffset * 0.35, width, height);
-  gctx.filter = 'none';
-
-  // Pass 2: Horizontal data-shear scanlines.
-  gctx.globalCompositeOperation = 'lighter';
-  gctx.globalAlpha = lineAlpha;
-  const lineCount = modeProfile.crt ? 34 : 20;
-  for (let i = 0; i < lineCount; i++) {
-    const y = Math.floor(((i * 53) + now * 0.08) % height);
-    const lineHeight = 1 + (i % 3);
-    const drift = Math.sin(now * 0.012 + i * 1.73) * splitOffset * 2.2;
-    gctx.drawImage(ghostFxCanvas, 0, y, width, lineHeight, drift, y, width, lineHeight);
-  }
-
-  // Pass 3: Shader-like column warp (sinusoidal UV-style distortion).
-  gctx.globalCompositeOperation = 'color-dodge';
-  gctx.globalAlpha = warpAlpha;
-  const columns = modeProfile.crt ? 18 : 26;
-  const colWidth = Math.ceil(width / columns);
-  const warpAmp = 1 + intensity * 130;
-  for (let c = 0; c < columns; c++) {
-    const sx = c * colWidth;
-    const sw = Math.min(colWidth, width - sx);
-    if (sw <= 0) continue;
-    const wave = Math.sin(t * 5.2 + c * 0.65) * warpAmp;
-    const wave2 = Math.cos(t * 3.6 + c * 0.43) * warpAmp * 0.55;
-    gctx.drawImage(ghostFxCanvas, sx, 0, sw, height, sx + wave, wave2, sw, height);
-  }
-
-  if (modeProfile.crt) {
-    gctx.globalCompositeOperation = 'overlay';
-    gctx.globalAlpha = Math.min(0.09, 0.02 + intensity * 3.5);
-    for (let y = 0; y < height; y += 2) {
-      gctx.fillStyle = 'rgba(0,0,0,0.38)';
-      gctx.fillRect(0, y, width, 1);
-    }
-  }
-
-  // Pass 4: Curve-style toning (soft-light gradient as pseudo color curve shaping).
-  gctx.globalCompositeOperation = 'soft-light';
-  gctx.globalAlpha = curveAlpha;
-  const curveGrad = gctx.createLinearGradient(0, 0, 0, height);
-  curveGrad.addColorStop(0, 'rgba(10, 40, 90, 1)');
-  curveGrad.addColorStop(0.5, 'rgba(140, 255, 210, 1)');
-  curveGrad.addColorStop(1, 'rgba(70, 10, 120, 1)');
-  gctx.fillStyle = curveGrad;
-  gctx.fillRect(0, 0, width, height);
-
-  // Pass 5: Cyan phosphor wash for the Ghost Protocol look.
-  gctx.globalCompositeOperation = 'soft-light';
-  gctx.globalAlpha = glowAlpha;
-  gctx.fillStyle = `hsla(${175 + Math.sin(t * 1.2) * (modeProfile.crt ? 9 : 18)}, 100%, 58%, 1)`;
-  gctx.fillRect(0, 0, width, height);
-
-  gctx.restore();
-  gctx.filter = 'none';
-}
-
-function mainRenderLoop() {
-    if (!isLooping) {
-        isLooping = true;
-        lastFrameTime = performance.now();
-    }
-    const now = performance.now();
-    const deltaSeconds = (now - lastFrameTime) * timeScale * 0.001;
-    lastFrameTime = now;
-    customTime += deltaSeconds * 1000;
-
-    resizeGlitchCanvas();
-    gctx.clearRect(0, 0, glitchCanvas.width, glitchCanvas.height);
-    
-    // Run all active effects (manually triggered + continuous)
-    activeEffects.forEach(effectFn => {
-        try {
-            effectFn();
-        } catch (err) {
-            console.error('Glitch effect error:', err);
+    if (!isAiWarpActive) { // Check if AI Warp is NOT active
+        const hueStrength = (effectAlphas['Hue/Color Cycle'] ?? 0) * masterOpacity;
+        if (hueStrength > 0.01) {
+            const angle = hueStrength * 360;
+            filters.push(`hue-rotate(${angle}deg)`);
         }
-    });
-
-    renderGhostProtocol(now);
-
-    if (ghostCanvas.width === glitchCanvas.width && ghostCanvas.height === glitchCanvas.height) {
-        ghostCtx.clearRect(0, 0, ghostCanvas.width, ghostCanvas.height);
-        ghostCtx.drawImage(glitchCanvas, 0, 0, ghostCanvas.width, ghostCanvas.height);
     }
 
-    requestAnimationFrame(mainRenderLoop);
-}
-
-// Cached continuous effect functions to avoid recreating them every frame
-const continuousEffectCache = {};
-
-function updateContinuousEffectsCache() {
-    // Update timed effects based on slider values
-    timedEffectsDefs.forEach(def => {
-        const alpha = effectAlphas[def.name] ?? 0;
-        const hasEffect = continuousEffectCache[def.name] !== undefined;
-        
-        if (alpha > 0 && !hasEffect) {
-            // Slider increased above 0, create effect
-            const getStrength = () => effectAlphas[def.name] * masterOpacity;
-            continuousEffectCache[def.name] = def.factory(getStrength, true);
-            activeEffects.push(continuousEffectCache[def.name]);
-        } else if (alpha === 0 && hasEffect) {
-            // Slider decreased to 0, remove effect
-            const index = activeEffects.indexOf(continuousEffectCache[def.name]);
-            if (index > -1) activeEffects.splice(index, 1);
-            delete continuousEffectCache[def.name];
-        }
-    });
-    
-    // Data Bomb effect
-    const dataBombAlpha = effectAlphas['Data Bomb'] ?? 0;
-    const hasDataBomb = continuousEffectCache['Data Bomb'] !== undefined;
-    
-    if (dataBombAlpha > 0 && !hasDataBomb && dataBombDef.factory) {
-        const getStrength = () => effectAlphas['Data Bomb'] * masterOpacity;
-        continuousEffectCache['Data Bomb'] = dataBombDef.factory(getStrength, true);
-        activeEffects.push(continuousEffectCache['Data Bomb']);
-    } else if (dataBombAlpha === 0 && hasDataBomb) {
-        const index = activeEffects.indexOf(continuousEffectCache['Data Bomb']);
-        if (index > -1) activeEffects.splice(index, 1);
-        delete continuousEffectCache['Data Bomb'];
+    if (filters.length > 0) {
+        wrapper.style.filter = filters.join(' ');
+    } else {
+        wrapper.style.filter = 'none';
     }
 }
 
@@ -1959,7 +1334,6 @@ globalSlider.step = 0.01;
 globalSlider.value = masterOpacity;
 globalSlider.addEventListener('input', () => {
   masterOpacity = parseFloat(globalSlider.value);
-  updateContinuousEffectsCache();
 });
 globalGroup.appendChild(globalLabel);
 globalGroup.appendChild(globalSlider);
@@ -1994,42 +1368,7 @@ sliderContainer.appendChild(globalGroup);
   sliderElements[def.name] = slider;
   slider.addEventListener('input', () => {
     effectAlphas[def.name] = parseFloat(slider.value);
-    updateContinuousEffectsCache();
   });
-
-  group.appendChild(label);
-  group.appendChild(slider);
-
-  // If the effect is a timed effect, add a trigger button
-  if (timedEffectsDefs.some(timedDef => timedDef.name === def.name)) {
-    const triggerButton = document.createElement('button');
-    triggerButton.className = 'trigger-button';
-    triggerButton.textContent = 'Trigger';
-    triggerButton.addEventListener('click', () => {
-      const now = Date.now();
-      const effectName = def.name;
-
-      // Initialize if not present
-      if (!triggerTimestamps[effectName]) {
-        triggerTimestamps[effectName] = [];
-      }
-
-      // Filter out old timestamps (older than 5 seconds)
-      triggerTimestamps[effectName] = triggerTimestamps[effectName].filter(
-        timestamp => now - timestamp < 5000
-      );
-
-      // Check if limit is reached
-      if (triggerTimestamps[effectName].length < 5) {
-        triggerTimestamps[effectName].push(now);
-        triggerTimedEffect(def);
-      } else {
-        // Optional: provide feedback that the limit is reached
-        console.log(`Rate limit reached for ${effectName}. Please wait.`);
-      }
-    });
-    group.appendChild(triggerButton);
-  }
 
   if (def.name === 'Scanlines') {
     slider.addEventListener('input', (e) => {
@@ -2043,17 +1382,20 @@ sliderContainer.appendChild(globalGroup);
     });
   }
 
-  // Add Lock Button
-  const lockButton = document.createElement('button');
-  lockButton.className = 'lock-button';
-  lockButton.textContent = '<LOCK!>';
-  lockButton.addEventListener('click', () => {
-    sliderLocks[def.name] = !sliderLocks[def.name]; // Toggle lock state
-    lockButton.classList.toggle('locked', sliderLocks[def.name]);
-    lockButton.textContent = sliderLocks[def.name] ? '[LOCKED!]' : '<LOCK!>';
-  });
+  group.appendChild(label);
+  group.appendChild(slider);
+  
+    // Add Lock Button
+    const lockButton = document.createElement('button');
+    lockButton.className = 'lock-button';
+    lockButton.textContent = '<LOCK!>';
+    lockButton.addEventListener('click', () => {
+        sliderLocks[def.name] = !sliderLocks[def.name]; // Toggle lock state
+        lockButton.classList.toggle('locked', sliderLocks[def.name]);
+        lockButton.textContent = sliderLocks[def.name] ? '[LOCKED!]' : '<LOCK!>';
+    });
 
-  group.appendChild(lockButton);
+    group.appendChild(lockButton);
   
   sliderContainer.appendChild(group);
 });
@@ -2068,7 +1410,6 @@ function generateNewRandomTargets() {
   if (!sliderLocks.global) {
     randomTargetAlphas['global'] = Math.random();
   }
-  ghostProtocolRandomTarget = Math.random();
 }
 
 randomizeBtn.addEventListener('click', () => {
@@ -2086,14 +1427,12 @@ randomizeBtn.addEventListener('click', () => {
             sliderElements[effectName].value = randomValue;
         }
     });
-    updateContinuousEffectsCache();
 });
 
 continualRandomizeBtn.addEventListener('click', () => {
   isContinuallyRandomizing = !isContinuallyRandomizing;
   continualRandomizeBtn.textContent = isContinuallyRandomizing ? 'Continual Randomization: ON' : 'Continual Randomization: OFF';
   if (isContinuallyRandomizing) {
-    ghostProtocolRandomTarget = ghostProtocolLevel;
     generateNewRandomTargets();
   }
 });
@@ -2101,13 +1440,14 @@ continualRandomizeBtn.addEventListener('click', () => {
 aiWarpBtn.addEventListener('click', () => {
   isAiWarpActive = !isAiWarpActive;
   aiWarpBtn.textContent = `AI Video Warp: ${isAiWarpActive ? 'ON' : 'OFF'}`;
+  // Apply or remove the filter from the iframe
   if (isAiWarpActive) {
+      ytFrame.style.filter = 'brightness(0.9) contrast(1.1) url(#ai-warp-filter)';
       startGlitchOverlay();
   } else {
+      ytFrame.style.filter = 'brightness(0.9) contrast(1.1)';
       stopGlitchOverlay();
-      applyYouTubeWarpMotion(performance.now(), 0);
   }
-  applyMasterFilters();
 });
 // --- Glitch Overlay Logic (from midi+mp3.html, adapted for constant effect) ---
 let glitchOverlayActive = false;
@@ -2129,17 +1469,22 @@ function stopGlitchOverlay() {
 function updateGlitchOverlay() {
   window.isGlitchOverlayLoopRunning = true;
   if (glitchOverlayActive) {
-    const time = performance.now();
-    const pulse = (Math.sin(time / 9000) + 1) / 2;
-    const blendIntensity = 0.16 + pulse * 0.18;
-    const primaryHue = aiWarpHue % 360;
-    const secondaryHue = (primaryHue + 82 + Math.sin(time / 11000) * 18) % 360;
-    const tertiaryHue = (primaryHue + 196 + Math.cos(time / 13000) * 24) % 360;
-    const x1 = 22 + Math.sin(time / 7000) * 12;
-    const y1 = 28 + Math.cos(time / 8200) * 10;
-    const x2 = 76 + Math.cos(time / 9600) * 11;
-    const y2 = 62 + Math.sin(time / 7600) * 9;
-    const angle = 140 + Math.sin(time / 15000) * 26;
+    const time = Date.now();
+    // --- Intensity-driven Opacity Pulse ---
+    const pulseSpeed = 12000;
+    const pulse = (Math.sin(time / pulseSpeed * Math.PI * 2) + 1) / 2;
+    const blendIntensity = 0.7 * pulse; // Use a constant intensity for visual effect
+
+    // --- Slow, Random Color Gradient Cycle ---
+    const gradientChangeSpeed = 20000;
+    if (!window.lastGradientUpdateTime || (time - window.lastGradientUpdateTime > gradientChangeSpeed)) {
+      window.lastGradientUpdateTime = time;
+      const randomAngle = Math.random() * 360;
+      const color1 = `hsl(${Math.random() * 360}, 100%, 60%)`;
+      const color2 = `hsl(${Math.random() * 360}, 100%, 60%)`;
+      const color3 = `hsl(${Math.random() * 360}, 100%, 60%)`;
+      window.currentGradient = `linear-gradient(${randomAngle}deg, ${color1}, ${color2}, ${color3})`;
+    }
 
     // Get or create overlay element
     let overlay = document.getElementById('color-shift-overlay');
@@ -2153,136 +1498,24 @@ function updateGlitchOverlay() {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        mixBlendMode: 'screen',
-        zIndex: '4',
+        mixBlendMode: 'color-dodge',
+        zIndex: '10000',
         opacity: '0',
-        transition: 'opacity 0.6s ease'
+        transition: 'opacity 0.8s ease'
       });
       document.body.appendChild(overlay);
     }
 
     // Apply the dynamic styles
     overlay.style.opacity = blendIntensity;
-    overlay.style.background = `radial-gradient(circle at ${x1}% ${y1}%, hsla(${primaryHue}, 100%, 62%, 0.34), transparent 34%), radial-gradient(circle at ${x2}% ${y2}%, hsla(${secondaryHue}, 92%, 58%, 0.28), transparent 36%), linear-gradient(${angle}deg, hsla(${tertiaryHue}, 100%, 56%, 0.18), hsla(${primaryHue}, 84%, 52%, 0.14), hsla(${secondaryHue}, 88%, 60%, 0.2))`;
+    if (window.currentGradient) {
+      overlay.style.background = window.currentGradient;
+    }
+    document.body.style.filter = 'none';
   }
   requestAnimationFrame(updateGlitchOverlay);
 }
 
-let aiWarpHue = 0;
-function updateAiWarpParameters() {
-  const currentTime = performance.now();
-  const hueStrength = (effectAlphas['Hue/Color Cycle'] ?? 0) * masterOpacity;
-  const baseHue = (currentTime * 0.02) % 360;
-  aiWarpHue = (baseHue * 0.5 + hueStrength * 260) % 360;
-
-  if (feTurbulenceLarge) {
-    const largeFreq = 0.0018 + Math.sin(currentTime / 14000) * 0.001 + hueStrength * 0.0008;
-    feTurbulenceLarge.setAttribute('baseFrequency', Math.max(0.0005, largeFreq).toFixed(4));
-  }
-
-  if (feTurbulenceSmall) {
-    const smallFreq = 0.022 + Math.cos(currentTime / 6500) * 0.01 + hueStrength * 0.008;
-    feTurbulenceSmall.setAttribute('baseFrequency', Math.max(0.005, smallFreq).toFixed(4));
-  }
-
-  if (feColorMatrix) {
-    feColorMatrix.setAttribute('values', aiWarpHue.toString());
-  }
-
-  if (feDisplacement) {
-    const warpPulse = (Math.sin(currentTime * 0.001) + 1) / 2;
-    const crunchWave = (Math.sin(currentTime * 0.00062 + 1.4) + 1) / 2;
-    const distortion = 8 + crunchWave * 18 + warpPulse * 14 + hueStrength * 24;
-    feDisplacement.setAttribute('scale', distortion.toFixed(0));
-  }
-
-  applyYouTubeWarpMotion(currentTime, hueStrength);
-}
-
-function refreshEffectsLoop() {
-  const now = performance.now();
-  const deltaSeconds = Math.max(0, (now - lastRefreshEffectsTime) * 0.001);
-  lastRefreshEffectsTime = now;
-
-  applyMasterFilters();
-  
-  // Use time-based stepping so continual randomization keeps moving at a stable rate.
-  if (isContinuallyRandomizing) {
-    let cacheChanged = false;
-    const step = randomizationSpeed * deltaSeconds;
-    const easingFactor = Math.min(0.18, deltaSeconds * 2.8);
-
-    if (now >= nextRandomizationBehaviorChange) {
-      randomizationBehavior = randomizationBehavior === 'steady' ? 'targeted' : 'steady';
-      nextRandomizationBehaviorChange = now + 4000 + Math.random() * 5000;
-    }
-
-    if (!sliderLocks.global && randomTargetAlphas.global !== undefined) {
-      const globalTarget = randomTargetAlphas.global;
-      const globalDiff = globalTarget - masterOpacity;
-
-      if (Math.abs(globalDiff) < step) {
-        randomTargetAlphas.global = Math.random();
-      } else if (randomizationBehavior === 'targeted') {
-        masterOpacity += globalDiff * easingFactor;
-        globalSlider.value = masterOpacity.toFixed(3);
-        cacheChanged = true;
-      } else {
-        masterOpacity += Math.sign(globalDiff) * step;
-        globalSlider.value = masterOpacity.toFixed(3);
-        cacheChanged = true;
-      }
-    }
-
-    Object.keys(effectAlphas).forEach(name => {
-      if (!sliderLocks[name] && randomTargetAlphas[name] !== undefined) {
-        const target = randomTargetAlphas[name];
-        const current = effectAlphas[name];
-        const diff = target - current;
-        
-        if (Math.abs(diff) < step) {
-          randomTargetAlphas[name] = Math.random();
-        } else if (randomizationBehavior === 'targeted') {
-          effectAlphas[name] = current + (diff * easingFactor);
-          if (sliderElements[name]) {
-            sliderElements[name].value = effectAlphas[name];
-          }
-          cacheChanged = true;
-        } else {
-          effectAlphas[name] = current + Math.sign(diff) * step;
-          if (sliderElements[name]) {
-            sliderElements[name].value = effectAlphas[name];
-          }
-          cacheChanged = true;
-        }
-      }
-    });
-
-    if (ghostProtocolSlider) {
-      const ghostDiff = ghostProtocolRandomTarget - ghostProtocolLevel;
-      if (Math.abs(ghostDiff) < step) {
-        ghostProtocolRandomTarget = Math.random();
-      } else if (randomizationBehavior === 'targeted') {
-        ghostProtocolLevel += ghostDiff * easingFactor;
-        ghostProtocolSlider.value = ghostProtocolLevel.toFixed(3);
-        updateGhostProtocolUi();
-      } else {
-        ghostProtocolLevel += Math.sign(ghostDiff) * step;
-        ghostProtocolSlider.value = ghostProtocolLevel.toFixed(3);
-        updateGhostProtocolUi();
-      }
-    }
-
-    if (cacheChanged) {
-      updateContinuousEffectsCache();
-    }
-  }
-  
-  if (isAiWarpActive) {
-    updateAiWarpParameters();
-  }
-  requestAnimationFrame(refreshEffectsLoop);
-}
 
 let isAutoGlitching = false;
 function persistentAutoGlitchLoop() {
@@ -2302,153 +1535,136 @@ autoGlitchBtn.addEventListener('click', () => {
   persistentAutoGlitchLoop();
 });
 
-let player;
-let isApiReady = false; // Flag to check if the YouTube API is loaded
+function mainRenderLoop() {
+  isLooping = true;
+  const now = performance.now();
+  const deltaTime = now - lastFrameTime;
+  lastFrameTime = now;
+  const dataBombStrength = effectAlphas['Data Bomb'] * masterOpacity;
+  const maxSpeed = 2.0;
+  const minSpeed = 0.1;
+  timeScale = maxSpeed - (dataBombStrength * (maxSpeed - minSpeed));
+  customTime += deltaTime * timeScale;
+  masterBeat = (Math.sin(customTime / 200) + 1) / 2;
+  gctx.clearRect(0, 0, glitchCanvas.width, glitchCanvas.height);
+  activeEffects.forEach(fn => fn());
 
-function onYouTubeIframeAPIReady() {
-    isApiReady = true;
-    // We will now initialize the player inside startPlayback when it's first needed.
+  if (isContinuallyRandomizing) {
+        // --- New Continual Randomization Logic (now framerate-independent) ---
+        const step = randomizationSpeed * (deltaTime / 1000); // speed adjusted for frame time
+
+        // Handle Global Opacity
+        if (!sliderLocks.global) {
+            const globalTarget = randomTargetAlphas['global'];
+            if (typeof globalTarget !== 'undefined') {
+                const globalDiff = globalTarget - masterOpacity;
+                if (Math.abs(globalDiff) < step) {
+                    randomTargetAlphas['global'] = Math.random(); // Get new target
+                } else {
+                    masterOpacity += Math.sign(globalDiff) * step;
+                    globalSlider.value = masterOpacity;
+                }
+            }
+        }
+
+        // Handle all other effect sliders
+        Object.keys(effectAlphas).forEach(key => {
+            if (!sliderLocks[key]) { // Only randomize if not locked
+                const target = randomTargetAlphas[key];
+                const diff = target - effectAlphas[key];
+                if (Math.abs(diff) < step) {
+                    randomTargetAlphas[key] = Math.random(); // Get new target
+                } else {
+                    effectAlphas[key] += Math.sign(diff) * step;
+                    sliderElements[key].value = effectAlphas[key];
+                }
+            }
+        });
+  }
+
+  if (isAiWarpActive) {
+    // --- Warping animation ("twists" and "crunches")
+    const warpAmount = 50;
+    const largeFreq = 0.002 + Math.sin(customTime / 8000) * 0.0015;
+    const smallFreq = 0.03 + Math.cos(customTime / 3000) * 0.02;
+    if (feTurbulenceLarge) feTurbulenceLarge.setAttribute('baseFrequency', largeFreq);
+    if (feTurbulenceSmall) feTurbulenceSmall.setAttribute('baseFrequency', smallFreq);
+    if (feDisplacement) feDisplacement.setAttribute('scale', warpAmount * masterBeat);
+    
+    // --- Hue/Color Cycle for AI Warp ---
+    const hueStrength = (effectAlphas['Hue/Color Cycle'] ?? 0) * masterOpacity;
+    if (hueStrength > 0.01 && feColorMatrix) {
+        const angle = hueStrength * 360;
+        feColorMatrix.setAttribute('values', angle);
+    } else if (feColorMatrix) {
+        feColorMatrix.setAttribute('values', '0');
+    }
+  }
+  
+  applyMasterFilters();
+  requestAnimationFrame(mainRenderLoop);
 }
 
 function startPlayback(url, loop = false) {
-  if (!isHttpOrigin()) {
-    showNotificationMessage('YouTube embeds are blocked on file://. Open this page through localhost/http to restore picture.', 5200);
-    return;
-  }
-
-    if (!isApiReady) {
-        console.log("YouTube API is not ready yet.");
-        // Optionally, wait and retry
-        setTimeout(() => startPlayback(url, loop), 250);
-        return;
-    }
-
     const playlistMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
     const videoMatch = url.match(/(?:youtube\.com.*[?&]v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    let videoId = '';
-    let playlistId = '';
-    let playerVars = {
-        controls: 0,
-        rel: 0,
-        showinfo: 0,
-        modestbranding: 1,
-        autoplay: 1, // Explicitly set autoplay
-        loop: loop ? 1 : 0,
-        enablejsapi: 1,
-        playsinline: 1
-    };
-    const origin = window.location.protocol.startsWith('http') ? window.location.origin : undefined;
-    if (origin) {
-      playerVars.origin = origin;
-    }
+    let embedUrl = '';
 
     if (playlistMatch) {
-        playlistId = playlistMatch[1];
-        const videoIdMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-        if (videoIdMatch) {
-            videoId = videoIdMatch[1]; // Start playlist from this video
-        }
-        playerVars.listType = 'playlist';
-        playerVars.list = playlistId;
-    } else if (videoMatch) {
-        videoId = videoMatch[1];
+        const playlistId = playlistMatch[1];
+        embedUrl = `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&controls=0&mute=0&enablejsapi=1`;
         if (loop) {
-            playerVars.playlist = videoId; // Required for single video loop
+            embedUrl += '&loop=1';
+        }
+    } else if (videoMatch) {
+        const videoId = videoMatch[1];
+        embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&mute=0&enablejsapi=1`;
+        if (loop) {
+            embedUrl += `&loop=1&playlist=${videoId}`;
         }
     }
 
-    if (!videoId && !playlistId) {
+    if (embedUrl) {
+        ytFrame.src = embedUrl;
+        ytInput.style.display = 'none';
+        startBtn.style.display = 'none';
+        suggestedVideo.style.display = 'none';
+        suggestedPlaylist.style.display = 'none';
+        suggestedVideo3.style.display = 'none';
+        suggestedVideo2.style.display = 'none';
+        suggestedYoutube.style.display = 'none';
+        testCanvas.style.display = 'none';
+        randomizeBtn.style.display = 'block';
+        autoGlitchBtn.style.display = 'block';
+        continualRandomizeBtn.style.display = 'block';
+        aiWarpBtn.style.display = 'block';
+        sliderContainer.style.display = 'block';
+        document.getElementById('preset-toggle-btn').style.display = 'block';
+        glitchCanvas.style.zIndex = '2';
+        if (!isLooping) {
+            mainRenderLoop();
+        }
+    } else {
         alert('Please enter a valid YouTube video or playlist URL');
-        return;
-    }
-
-    // If player doesn't exist, create it.
-    if (!player) {
-        const playerConfig = {
-            height: '100%',
-            width: '100%',
-            playerVars: playerVars,
-            events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange
-            }
-        };
-        if (videoId) {
-            playerConfig.videoId = videoId;
-        }
-        player = new YT.Player('ytPlayerMount', playerConfig);
-    } else { // If player exists, just load the new video or playlist
-        player.unMute(); // Ensure it's unmuted for the new video
-        player.setVolume(100);
-        if (playlistId) {
-            player.loadPlaylist({
-                list: playlistId,
-                listType: 'playlist',
-                index: 0, // Or find index of videoId if present
-                startSeconds: 0,
-            });
-        } else {
-            player.loadVideoById(videoId);
-        }
-    }
-
-    // Ensure the YouTube iframe is visible and local video is hidden
-    if (ytWarpShell) {
-      ytWarpShell.style.display = 'block';
-    }
-    if (video) {
-        video.style.display = 'none';
-    }
-
-    // --- UI Update Logic (unchanged) ---
-    ytInput.style.display = 'none';
-    startBtn.style.display = 'none';
-    openFileBtn.style.display = 'none';
-    suggestedVideo.style.display = 'none';
-    suggestedPlaylist.style.display = 'none';
-    suggestedVideo3.style.display = 'none';
-    suggestedVideo2.style.display = 'none';
-    suggestedYoutube.style.display = 'none';
-    testCanvas.style.display = 'none';
-    defcon1Video.style.display = 'none';
-    randomizeBtn.style.display = 'block';
-    autoGlitchBtn.style.display = 'block';
-    continualRandomizeBtn.style.display = 'block';
-    aiWarpBtn.style.display = 'block';
-    sliderContainer.style.display = 'block';
-    document.getElementById('preset-toggle-btn').style.display = 'block';
-    glitchCanvas.style.zIndex = '2';
-    applyMasterFilters();
-    if (!isLooping) {
-        mainRenderLoop();
     }
 }
 
-function onPlayerReady(event) {
-    // This event fires only once when the player is created.
-    // Autoplay is handled by playerVars and onStateChange.
-    if (ytWarpShell) {
-      ytWarpShell.style.display = 'block';
-    }
-    if (video) {
-        video.style.display = 'none';
-    }
-    event.target.playVideo();
-    event.target.unMute();
-    event.target.setVolume(100);
-    applyMasterFilters();
-}
-
-function onPlayerStateChange(event) {
-    // When a new video is cued (e.g., via loadVideoById), its state changes.
-    // We play it when it's ready (state -1: unstarted/cued).
-    if (event.data === YT.PlayerState.UNSTARTED || event.data === YT.PlayerState.CUED) {
-         event.target.playVideo();
-    }
-    // Optional: handle video end for looping if playlist logic isn't enough
-    if (event.data === YT.PlayerState.ENDED) {
-        // You can add custom logic here if needed, e.g., for non-playlist looping
-    }
+function copyAndNotify(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        let notification = document.querySelector('.notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.className = 'notification';
+            document.body.appendChild(notification);
+        }
+        notification.textContent = 'Copied to clipboard';
+        notification.style.opacity = '1';
+        setTimeout(() => {
+            notification.style.opacity = '0';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
 }
 
 startBtn.addEventListener('click', () => {
@@ -2457,31 +1673,37 @@ startBtn.addEventListener('click', () => {
 
 suggestedVideo.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=gopYmb38DgM';
+    copyAndNotify(url);
     startPlayback(url);
 });
 
 suggestedVideo2.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=8o6bdTOhIyE';
+    copyAndNotify(url);
     startPlayback(url);
 });
 
 suggestedVideo3.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=uvSXL6ypLlw';
+    copyAndNotify(url);
     startPlayback(url);
 });
 
 suggestedYoutube.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=8hGxNwyH3LI';
+    copyAndNotify(url);
     startPlayback(url);
 });
 
 suggestedPlaylist.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=RgFaK6ZQifE&list=RDEMWUbu7UjvrEYUSE4m8ATOcw&start_radio=1';
+    copyAndNotify(url);
     startPlayback(url);
 });
 
 testCanvas.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=kCP2xZvhJk0';
+    copyAndNotify(url);
     startPlayback(url, true);
 });
 
@@ -2517,68 +1739,7 @@ randomSeedSlider.addEventListener('input', () => {
 let isUIHidden = false; // Initial state: UI is visible
 let tabHideTimer = null; // Timer to auto-hide the tab on mobile
 
-const uiControlHoverTargets = [
-  suggestedVideo,
-  suggestedPlaylist,
-  suggestedVideo2,
-  suggestedVideo3,
-  suggestedYoutube,
-  testCanvas,
-  ytInput,
-  startBtn,
-  openFileBtn,
-  randomizeBtn,
-  autoGlitchBtn,
-  continualRandomizeBtn,
-  aiWarpBtn,
-  ghostProtocolBtn,
-  sliderContainer,
-  document.getElementById('preset-toggle-btn'),
-  document.getElementById('preset-dropdown-container'),
-  wiredBtn,
-  uiToggleTab,
-  toggleUiBtn
-].filter(Boolean);
-
-let uiHoverDepth = 0;
-
-function showAllControlsOnHoverStart() {
-  uiHoverDepth += 1;
-  document.body.classList.add('ui-controls-hover');
-}
-
-function showAllControlsOnHoverEnd() {
-  uiHoverDepth = Math.max(0, uiHoverDepth - 1);
-  if (uiHoverDepth === 0) {
-    document.body.classList.remove('ui-controls-hover');
-  }
-}
-
-uiControlHoverTargets.forEach((el) => {
-  el.addEventListener('mouseenter', showAllControlsOnHoverStart);
-  el.addEventListener('mouseleave', showAllControlsOnHoverEnd);
-  el.addEventListener('focusin', showAllControlsOnHoverStart);
-  el.addEventListener('focusout', showAllControlsOnHoverEnd);
-});
-
-function hideTab() {
-  const tabWidth = uiToggleTab.offsetWidth || toggleUiBtn.offsetWidth || 160;
-  const visiblePeek = 40;
-  const collapsedRight = Math.min(0, visiblePeek - tabWidth);
-  uiToggleTab.style.setProperty('--ui-tab-collapsed-right', `${collapsedRight}px`);
-  uiToggleTab.classList.add('is-collapsed');
-  uiToggleTab.style.opacity = '0.95';
-}
-
-function showTabBriefly(duration = 1200) {
-  clearTimeout(tabHideTimer);
-  uiToggleTab.classList.remove('is-collapsed');
-  uiToggleTab.style.opacity = '1';
-  tabHideTimer = setTimeout(hideTab, duration);
-}
-
 toggleUiBtn.addEventListener('click', () => {
-  showTabBriefly(1200);
   isUIHidden = !isUIHidden;
   if (isUIHidden) {
     document.body.classList.add('ui-hidden');
@@ -2587,28 +1748,29 @@ toggleUiBtn.addEventListener('click', () => {
     document.body.classList.remove('ui-hidden');
     toggleUiBtn.textContent = 'HIDE CONTROL U.I.';
   }
-  // Reset hover reveal state after toggling to keep dim-by-default behavior consistent.
-  uiHoverDepth = 0;
-  document.body.classList.remove('ui-controls-hover');
-});
-
-// For touch devices, ensure the tab expands on tap
-uiToggleTab.addEventListener('touchstart', () => {
-  showTabBriefly(3000);
-});
-
-uiToggleTab.addEventListener('touchend', () => {
-  showTabBriefly(3000);
-});
-
-window.addEventListener('resize', () => {
-  if (uiToggleTab.classList.contains('is-collapsed')) {
-    hideTab();
+  // On mobile, restart the hide timer after the button is clicked
+  if ('ontouchstart' in window) {
+    clearTimeout(tabHideTimer);
+    tabHideTimer = setTimeout(hideTab, 3000); // Hide after 3 seconds
   }
 });
 
-requestAnimationFrame(() => {
-  hideTab();
+function hideTab() {
+    uiToggleTab.style.right = '-145px'; // Use the same value as the initial CSS
+    uiToggleTab.style.opacity = '0.4';
+}
+
+// For touch devices, ensure the tab expands on tap
+uiToggleTab.addEventListener('touchstart', () => {
+  // If a timer is already running, clear it
+  clearTimeout(tabHideTimer);
+  uiToggleTab.style.right = '0';
+  uiToggleTab.style.opacity = '1';
+});
+
+uiToggleTab.addEventListener('touchend', () => {
+  // Start a timer to hide the tab after a few seconds
+  tabHideTimer = setTimeout(hideTab, 3000); // 3 seconds
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2679,56 +1841,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.removeEventListener('click', resetIdleTimer);
         clearTimeout(idleTimer);
 
-        const writeHiddenUrlToClipboard = async () => {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(hiddenUrl);
-                return true;
-            }
-
-            const textarea = document.createElement('textarea');
-            textarea.value = hiddenUrl;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            textarea.style.pointerEvents = 'none';
-            document.body.appendChild(textarea);
-            textarea.select();
-            textarea.setSelectionRange(0, textarea.value.length);
-
-            let success = false;
+        if (navigator.clipboard && window.isSecureContext) {
             try {
-                success = document.execCommand('copy');
-            } catch (err) {
-                success = false;
-            }
-            document.body.removeChild(textarea);
-            return success;
-        };
+                await navigator.clipboard.writeText(hiddenUrl);
 
-        try {
-            const clipboardSuccess = await writeHiddenUrlToClipboard();
-            if (!clipboardSuccess) {
-                console.warn('Hidden URL fallback clipboard copy failed, displaying link instead.');
-                const fallback = document.createElement('div');
-                fallback.textContent = hiddenUrl;
-                fallback.style.position = 'fixed';
-                fallback.style.bottom = '10px';
-                fallback.style.left = '10px';
-                fallback.style.zIndex = '9999';
-                fallback.style.color = 'white';
-                fallback.style.background = 'rgba(0,0,0,0.8)';
-                fallback.style.padding = '8px 10px';
-                fallback.style.border = '1px solid lime';
-                fallback.style.fontFamily = 'monospace';
-                document.body.appendChild(fallback);
-                setTimeout(() => {
-                    if (document.body.contains(fallback)) {
-                        document.body.removeChild(fallback);
-                    }
-                }, 8000);
-            }
-
-            // 1. Pre-flash
-            await flashText('DATA..', 'crimson', 'red', 400);
+                // 1. Pre-flash
+                await flashText('DATA..', 'crimson', 'red', 400);
 
                 // 2. Green "!"
                 const exclamation = document.createElement('div');
@@ -2761,7 +1879,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error('Easter egg failed:', err);
             }
-        };
+        }
+    };
     
     const resetIdleTimer = () => {
         if (easterEggHasRun) return;
@@ -2777,13 +1896,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start the first timer
     resetIdleTimer();
-
-    // Also trigger the Easter egg automatically after page load if the user remains idle
-    setTimeout(() => {
-        if (!easterEggHasRun) {
-            runEasterEgg();
-        }
-    }, 1200);
 
     // --- Preset Dropdown Logic ---
     const presetToggleBtn = document.getElementById('preset-toggle-btn');
@@ -3051,12 +2163,12 @@ function applyEffectSettings(settings) {
   isAiWarpActive = settings.isAiWarpActive ?? false;
   aiWarpBtn.textContent = `AI Video Warp: ${isAiWarpActive ? 'ON' : 'OFF'}`;
   if (isAiWarpActive) {
+      ytFrame.style.filter = 'brightness(0.9) contrast(1.1) url(#ai-warp-filter)';
       startGlitchOverlay();
   } else {
+      ytFrame.style.filter = 'brightness(0.9) contrast(1.1)';
       stopGlitchOverlay();
-      applyYouTubeWarpMotion(performance.now(), 0);
   }
-    applyMasterFilters();
 
   // Restore slider lock states
   if (settings.sliderLocks) {
@@ -3080,17 +2192,48 @@ function applyEffectSettings(settings) {
 } 
 
 // Initial Load
-document.addEventListener('DOMContentLoaded', () => {
-  resize();
-  refreshEffectsLoop();
-  if (!isHttpOrigin()) {
-    showNotificationMessage('YouTube playback needs http://localhost or another web origin. Local video mode still works from file://.', 5600);
-  }
-  loadPresetsFromStorage();
-}); 
+document.addEventListener('DOMContentLoaded', loadPresetsFromStorage); 
 </script>
 </body>
 </html>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 <br>
 <br>
 <br>
