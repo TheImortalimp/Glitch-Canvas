@@ -49,6 +49,7 @@ static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
     }
 
     plane_t *plane = &picture->p[0];
+    const bool is_packed_rgba = plane->i_pixel_pitch == 4;
     const unsigned int band_start = (sys->frame_index * 3u) % 180u;
     const unsigned int band_end = band_start + 18u;
 
@@ -57,25 +58,41 @@ static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
         const bool is_scanline = (y + sys->frame_index / 3u) % 4u == 0u;
         const bool is_data_band = y % 180u >= band_start && y % 180u < band_end;
 
-        for (unsigned int x = 0; x + 3u < plane->i_visible_pitch; x += 4u) {
-            uint8_t red = pixels[x];
-            uint8_t green = pixels[x + 1u];
-            uint8_t blue = pixels[x + 2u];
+        if (is_packed_rgba) {
+            for (unsigned int x = 0; x + 3u < plane->i_visible_pitch; x += 4u) {
+                uint8_t red = pixels[x];
+                uint8_t green = pixels[x + 1u];
+                uint8_t blue = pixels[x + 2u];
 
-            if (is_scanline) {
-                red = (uint8_t)(red * 3u / 4u);
-                green = (uint8_t)(green * 3u / 4u);
-                blue = (uint8_t)(blue * 3u / 4u);
+                if (is_scanline) {
+                    red = (uint8_t)(red * 3u / 4u);
+                    green = (uint8_t)(green * 3u / 4u);
+                    blue = (uint8_t)(blue * 3u / 4u);
+                }
+
+                if (is_data_band) {
+                    pixels[x] = blue;
+                    pixels[x + 1u] = red;
+                    pixels[x + 2u] = green;
+                } else {
+                    pixels[x] = red;
+                    pixels[x + 1u] = green;
+                    pixels[x + 2u] = blue;
+                }
             }
+        } else {
+            for (unsigned int x = 0; x < plane->i_visible_pitch; ++x) {
+                uint8_t value = pixels[x];
 
-            if (is_data_band) {
-                pixels[x] = blue;
-                pixels[x + 1u] = red;
-                pixels[x + 2u] = green;
-            } else {
-                pixels[x] = red;
-                pixels[x + 1u] = green;
-                pixels[x + 2u] = blue;
+                if (is_scanline) {
+                    value = (uint8_t)(value * 3u / 4u);
+                }
+
+                if (is_data_band) {
+                    value = (uint8_t)(255u - value);
+                }
+
+                pixels[x] = value;
             }
         }
     }
@@ -87,10 +104,6 @@ static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
 static int Open(vlc_object_t *object)
 {
     filter_t *filter = (filter_t *)object;
-
-    if (filter->fmt_in.video.i_chroma != VLC_CODEC_RGBA) {
-        return VLC_EGENERIC;
-    }
 
     filter_sys_t *sys = calloc(1, sizeof(*sys));
     if (sys == NULL) {
