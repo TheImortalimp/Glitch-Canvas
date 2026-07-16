@@ -15,9 +15,7 @@ typedef SSIZE_T ssize_t;
 #include <vlc_filter.h>
 #include <vlc_picture.h>
 #include <vlc_plugin.h>
-
-#define ENABLE_TEXT N_("Enable Glitch Canvas effect")
-#define ENABLE_LONGTEXT N_("When disabled, the module stays loaded but leaves frames unchanged.")
+#include <vlc_variables.h>
 
 struct filter_sys_t {
     bool enabled;
@@ -81,7 +79,7 @@ static int Open(vlc_object_t *object)
         return VLC_ENOMEM;
     }
 
-    sys->enabled = var_InheritBool(filter, "glitch-canvas-enable");
+    sys->enabled = var_CreateGetBool(filter, "glitch-canvas-enable");
     filter->p_sys = sys;
     filter->pf_video_filter = FilterVideo;
     return VLC_SUCCESS;
@@ -98,7 +96,8 @@ vlc_module_begin()
     set_description("Animated glitch-video effect")
     set_subcategory(SUBCAT_VIDEO_VFILTER)
     add_bool("glitch-canvas-enable", true,
-             ENABLE_TEXT, ENABLE_LONGTEXT, false)
+             "Enable Glitch Canvas effect",
+             "When disabled, the module stays loaded but leaves frames unchanged.", false)
     set_capability("video filter", 0)
     set_callbacks(Open, Close)
     add_shortcut("glitch_canvas")
