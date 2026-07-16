@@ -1,0 +1,24 @@
+# Glitch Canvas VLC Filter
+
+This workspace keeps the HTML prototype as a visual reference and adds a native VLC video-filter module in `vlc-plugin/`. The plugin works on decoded RGBA video frames, so it can affect local files, network streams, and supported online video sources that VLC can play.
+
+## Current effect pass
+
+The initial native pass applies animated scanlines, moving data bands, and a restrained RGB channel split. It is intentionally frame-local and CPU-only, providing a stable base before porting larger effects such as Ghost Protocol, presets, and GPU shaders.
+
+## Build
+
+Install a VLC 3.0.x development build or clone the matching VLC 3.0.x source tree, then point CMake at the directory that contains `vlc_common.h`, `vlc_plugin.h`, and the other VLC internal headers:
+
+```powershell
+cmake -S vlc-plugin -B build/vlc-plugin -DVLC_PLUGIN_INCLUDE_DIR=C:/src/vlc/include
+cmake --build build/vlc-plugin --config Release
+```
+
+The resulting module is named `glitch_canvas` (`.dll` on Windows). This initial module targets VLC 3.0's filter ABI. For production distribution, build it through the matching VLC source tree so its ABI and module directory align with that VLC release, then place it in VLC's `plugins/video_filter` directory and run VLC with `--video-filter=glitch_canvas`.
+
+VLC's installed Windows application does not include the development headers needed to compile modules; a source checkout or development package is required.
+
+## Cloud build
+
+Pushing changes to `vlc-plugin/` or manually starting the `Build VLC plugin` workflow in GitHub Actions builds the Windows DLL on a hosted runner. Download `glitch-canvas-vlc-plugin-windows` from that workflow run's artifacts; no CMake or C compiler is required on this machine.

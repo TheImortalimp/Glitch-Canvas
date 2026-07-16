@@ -1,0 +1,42 @@
+name: Build VLC plugin
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-vlc-plugin.yml'
+      - 'vlc-plugin/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-module:
+    name: Build Windows VLC module
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out Glitch Canvas
+        uses: actions/checkout@v4
+
+      - name: Check out VLC 3.0.21 headers
+        uses: actions/checkout@v4
+        with:
+          repository: videolan/vlc
+          ref: 3.0.21
+          path: third_party/vlc
+
+      - name: Configure module
+        run: >-
+          cmake -S vlc-plugin -B build/vlc-plugin
+          -DVLC_PLUGIN_INCLUDE_DIR="${{ github.workspace }}\third_party\vlc\include"
+
+      - name: Build module
+        run: cmake --build build/vlc-plugin --config Release
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: glitch-canvas-vlc-plugin-windows
+          path: build/vlc-plugin/Release/glitch_canvas.dll
+          if-no-files-found: error
