@@ -188,7 +188,8 @@ let lastOverlayDrawTime = 0;
 const continualRandomizationWatchdog = {
   lastMotionTime: performance.now(),
   lastRetargetTime: performance.now(),
-  loopErrors: 0
+  loopErrors: 0,
+  noMotionFrameCount: 0
 };
 
 function clamp01(value) {
@@ -2473,6 +2474,7 @@ function refreshEffectsLoop() {
 
     if (isContinuallyRandomizing) {
       let cacheChanged = false;
+      let hadMotionThisFrame = false;
 
       safeguardContinualRandomization(now);
 
@@ -2483,6 +2485,7 @@ function refreshEffectsLoop() {
           globalSlider.value = masterOpacity.toFixed(3);
           cacheChanged = true;
           markContinualRandomizationMotion(now);
+          hadMotionThisFrame = true;
         }
       }
 
@@ -2495,6 +2498,7 @@ function refreshEffectsLoop() {
             if (sliderElements[name]) sliderElements[name].value = next.toFixed(3);
             cacheChanged = true;
             markContinualRandomizationMotion(now);
+            hadMotionThisFrame = true;
           }
         }
       });
@@ -2506,6 +2510,7 @@ function refreshEffectsLoop() {
           ghostProtocolSlider.value = next.toFixed(3);
           updateGhostProtocolUi();
           markContinualRandomizationMotion(now);
+          hadMotionThisFrame = true;
         }
       }
 
@@ -2513,6 +2518,19 @@ function refreshEffectsLoop() {
       if (visChanged) {
         youtubeIframeVisibility = nextVis;
         markContinualRandomizationMotion(now);
+        hadMotionThisFrame = true;
+      }
+
+      // If no motion detected on this frame, increment no-motion counter
+      if (!hadMotionThisFrame) {
+        continualRandomizationWatchdog.noMotionFrameCount++;
+        // Force retarget after 3 frames (~50ms) of no motion to prevent freezing
+        if (continualRandomizationWatchdog.noMotionFrameCount >= 3) {
+          retargetContinualRandomization(now);
+          continualRandomizationWatchdog.noMotionFrameCount = 0;
+        }
+      } else {
+        continualRandomizationWatchdog.noMotionFrameCount = 0;
       }
 
       if (cacheChanged) updateContinuousEffectsCache();
@@ -2704,6 +2722,7 @@ randomSeedSlider.addEventListener('input', () => {
         const randomGlobalOpacity = seededRandom();
         masterOpacity = randomGlobalOpacity;
         globalSlider.value = randomGlobalOpacity;
+        randomTargetAlphas.global = randomGlobalOpacity; // Sync target to prevent jump
     }
 
     // Set effect alphas for all sliders based on the seed ("script point")
@@ -2711,11 +2730,18 @@ randomSeedSlider.addEventListener('input', () => {
         if (!sliderLocks[effectName]) { // Only randomize if not locked
             const randomValue = seededRandom();
             effectAlphas[effectName] = randomValue;
+            randomTargetAlphas[effectName] = randomValue; // Sync target to prevent jump
             if (sliderElements[effectName]) {
                 sliderElements[effectName].value = randomValue;
             }
         }
     });
+
+    // If continuous randomization is active, immediately retarget to create new motion
+    if (isContinuallyRandomizing) {
+        retargetContinualRandomization(performance.now());
+        continualRandomizationWatchdog.noMotionFrameCount = 0;
+    }
 
     // The "script burst" logic that was here has been removed as requested.
 });
