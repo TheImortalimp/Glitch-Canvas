@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Glitch Canvas YouTube — UI Test</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='black'/%3E%3Cpath d='M14 32h36' stroke='lime' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M22 20l-8 12 8 12' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Cpath d='M42 20l8 12-8 12' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="glitch-canvas-youtube.css?v=3">
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
@@ -34,17 +35,6 @@
       <button class="preset-delete-all-btn">ALL</button>
     </div>
   </div>
-
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NTXL35MFPT"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-NTXL35MFPT');
-</script>
 
 <div id="ui-toggle-tab">
   <button id="toggle-ui-btn">HIDE CONTROL U.I.</button>
@@ -116,34 +106,8 @@ fileInput.addEventListener('change', (event) => {
     video.src = url;
     video.loop = true;
     video.addEventListener('canplay', () => {
-      video.style.display = 'block';
-      ytWarpShell.style.display = 'none';
-      ytInput.style.display = 'none';
-      startBtn.style.display = 'none';
-      suggestedVideo.style.display = 'none';
-      suggestedPlaylist.style.display = 'none';
-      suggestedVideo3.style.display = 'none';
-      suggestedVideo2.style.display = 'none';
-      suggestedYoutube.style.display = 'none';
-      testCanvas.style.display = 'none';
-      openFileBtn.style.display = 'none';
-      defcon1Video.style.display = 'none';
-
-      // Show all UI elements (sliders, buttons, preset menu, etc.)
-      randomizeBtn.style.display = 'block';
-      autoGlitchBtn.style.display = 'block';
-      continualRandomizeBtn.style.display = 'block';
-      aiWarpBtn.style.display = 'block';
-      sliderContainer.style.display = 'block';
-      document.getElementById('preset-toggle-btn').style.display = 'block';
-      // If you have a preset dropdown container, show it as well (optional)
-      // document.getElementById('preset-dropdown-container').style.display = 'block';
-
-      glitchCanvas.style.zIndex = '2';
+      activatePlaybackUi('local');
       video.play();
-      if (!isLooping) {
-        mainRenderLoop();
-      }
     }, { once: true });
   }
 });
@@ -168,10 +132,6 @@ const suggestedVideo2 = document.getElementById('suggestedVideo2');
 const suggestedYoutube = document.getElementById('suggestedYoutube');
 const defcon1Video = document.getElementById('Defcon1Video');
 const testCanvas = document.getElementById('testCanvas');
-// DEFCON 1 link click handler
-defcon1Video.addEventListener('click', function() {
-    startPlayback('https://www.youtube.com/watch?v=jmEAP7aGo0o');
-});
 const wiredBtn = document.getElementById('wired-btn'); // Get reference to the wired button
 const ghostProtocolBtn = document.getElementById('ghostProtocolBtn');
 const ghostProtocolSlider = document.getElementById('ghostProtocolSlider');
@@ -189,11 +149,150 @@ let autoGlitchInterval = null;
 let isContinuallyRandomizing = false;
 let randomTargetAlphas = {};
 let ghostProtocolRandomTarget = ghostProtocolLevel;
-const randomizationSpeed = 0.5; // Controls speed, approx. seconds to traverse full range
-let randomizationBehavior = 'steady';
-let nextRandomizationBehaviorChange = performance.now() + 4000 + Math.random() * 5000;
+const continualConfluenceEffects = ['Hue/Color Cycle', 'B&W Invert', 'Data Bands', 'VHS Glitch', 'Scanlines'];
+let youtubeIframeVisibility = 1;
+let youtubeIframeVisibilityTarget = 1;
+let nextRandomizationBehaviorChange = performance.now() + 12000 + Math.random() * 9000;
 let masterBeat = 0;
 let triggerTimestamps = {}; // For rate limiting trigger buttons
+const performanceProfile = (() => {
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const hardwareConcurrency = navigator.hardwareConcurrency || 8;
+  const deviceMemory = navigator.deviceMemory || 8;
+  const lowPower = prefersReducedMotion || hardwareConcurrency <= 4 || deviceMemory <= 4;
+  return {
+    lowPower,
+    renderIntervalMs: lowPower ? 33 : 0,
+    effectsIntervalMs: lowPower ? 40 : 0,
+    overlayIntervalMs: lowPower ? 66 : 0,
+    renderScale: lowPower ? 0.85 : 1,
+    pixelRatioCap: lowPower ? 1 : 1.5
+  };
+})();
+const domRenderCache = {
+  bodyFilter: '',
+  shellFilter: '',
+  shellOpacity: '',
+  iframeFilter: '',
+  iframeOpacity: '',
+  overlayOpacity: '',
+  overlayBackground: ''
+};
+let lastRenderDrawTime = 0;
+let lastEffectsDrawTime = 0;
+let lastOverlayDrawTime = 0;
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
+}
+
+function applyStyleIfChanged(element, property, value) {
+  if (element && element.style[property] !== value) {
+    element.style[property] = value;
+  }
+}
+
+function easeToward(current, target, deltaSeconds, rate = 1.0) {
+  const blend = 1 - Math.exp(-rate * Math.max(0, deltaSeconds));
+  return current + (target - current) * blend;
+}
+
+function retargetContinualRandomization(now = performance.now()) {
+  const hueAnchor = Math.random();
+  const visibilityAnchor = Math.random();
+  const textureAnchor = Math.random();
+  const textureAmount = 0.04 + textureAnchor * 0.2;
+
+  if (!sliderLocks['Hue/Color Cycle']) {
+    randomTargetAlphas['Hue/Color Cycle'] = clamp01(0.18 + hueAnchor * 0.58);
+  }
+  if (!sliderLocks['B&W Invert']) {
+    randomTargetAlphas['B&W Invert'] = clamp01(0.02 + visibilityAnchor * 0.12);
+  }
+  if (!sliderLocks['Data Bands']) {
+    randomTargetAlphas['Data Bands'] = clamp01(textureAmount * (0.75 + hueAnchor * 0.25));
+  }
+  if (!sliderLocks['VHS Glitch']) {
+    randomTargetAlphas['VHS Glitch'] = clamp01(textureAmount * (0.55 + (1 - visibilityAnchor) * 0.25));
+  }
+  if (!sliderLocks['Scanlines']) {
+    randomTargetAlphas['Scanlines'] = clamp01(0.08 + textureAmount * 0.65);
+  }
+  if (!sliderLocks.global) {
+    randomTargetAlphas.global = clamp01(0.7 + visibilityAnchor * 0.18 - hueAnchor * 0.05);
+  }
+
+  ghostProtocolRandomTarget = clamp01(0.14 + textureAmount * 0.6 + hueAnchor * 0.08);
+  youtubeIframeVisibilityTarget = clamp01(0.84 + visibilityAnchor * 0.1 + hueAnchor * 0.04);
+  nextRandomizationBehaviorChange = now + 9000 + Math.random() * 7000;
+}
+
+function setElementDisplay(elements, display) {
+  elements.forEach((element) => {
+    if (element) {
+      element.style.display = display;
+    }
+  });
+}
+
+function setPlaybackSurface(mode) {
+  if (mode === 'local') {
+    video.style.display = 'block';
+    ytWarpShell.style.display = 'none';
+    return;
+  }
+
+  ytWarpShell.style.display = 'block';
+  video.style.display = 'none';
+}
+
+function hidePlaybackPrompts() {
+  setElementDisplay([
+    ytInput,
+    startBtn,
+    openFileBtn,
+    suggestedVideo,
+    suggestedPlaylist,
+    suggestedVideo3,
+    suggestedVideo2,
+    suggestedYoutube,
+    defcon1Video,
+    testCanvas
+  ], 'none');
+}
+
+function showPlaybackControls() {
+  setElementDisplay([
+    randomizeBtn,
+    autoGlitchBtn,
+    continualRandomizeBtn,
+    aiWarpBtn,
+    sliderContainer
+  ], 'block');
+
+  if (presetToggleBtn) {
+    presetToggleBtn.style.display = 'block';
+  }
+}
+
+function activatePlaybackUi(mode) {
+  setPlaybackSurface(mode);
+  hidePlaybackPrompts();
+  showPlaybackControls();
+  glitchCanvas.style.zIndex = '2';
+  applyMasterFilters();
+
+  if (!isLooping) {
+    mainRenderLoop();
+  }
+}
+
+function bindPlaybackTrigger(element, url, loop = false) {
+  if (!element) return;
+  element.addEventListener('click', () => {
+    startPlayback(url, loop);
+  });
+}
 
 function getGhostProtocolMode() {
   return ghostProtocolModes[ghostProtocolModeIndex] || 'OFF';
@@ -298,7 +397,7 @@ function initTechArtistShader() {
   scene.background = new THREE.Color(0x000000);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, performanceProfile.pixelRatioCap));
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   const uniforms = {
@@ -1614,7 +1713,7 @@ function getYouTubeIframeElement() {
 }
 
 function applyYouTubeSurfaceFilters(hueFilter = '') {
-  const baseYoutubeFilter = 'brightness(0.9) contrast(1.1)';
+  const baseYoutubeFilter = `brightness(${(0.76 + youtubeIframeVisibility * 0.28).toFixed(3)}) contrast(${(1.02 + youtubeIframeVisibility * 0.12).toFixed(3)})`;
   const iframeFilters = [baseYoutubeFilter];
   const shellFilters = [baseYoutubeFilter];
 
@@ -1630,17 +1729,33 @@ function applyYouTubeSurfaceFilters(hueFilter = '') {
 
   if (ytWarpShell) {
     const shellFilterValue = shellFilters.join(' ');
-    ytWarpShell.style.filter = shellFilterValue;
-    ytWarpShell.style.webkitFilter = shellFilterValue;
-    ytWarpShell.style.willChange = 'filter, transform';
+    const shellOpacity = Math.min(1, youtubeIframeVisibility * 0.94 + 0.06).toFixed(3);
+    if (domRenderCache.shellFilter !== shellFilterValue) {
+      domRenderCache.shellFilter = shellFilterValue;
+      ytWarpShell.style.filter = shellFilterValue;
+      ytWarpShell.style.webkitFilter = shellFilterValue;
+    }
+    if (domRenderCache.shellOpacity !== shellOpacity) {
+      domRenderCache.shellOpacity = shellOpacity;
+      ytWarpShell.style.opacity = shellOpacity;
+    }
+    applyStyleIfChanged(ytWarpShell, 'willChange', 'filter, transform');
   }
 
   const filterValue = iframeFilters.join(' ');
+  const iframeOpacity = youtubeIframeVisibility.toFixed(3);
   const surfaces = [ytFrame, getYouTubeIframeElement()].filter(Boolean);
   surfaces.forEach((surface) => {
-    surface.style.filter = filterValue;
-    surface.style.webkitFilter = filterValue;
-    surface.style.willChange = 'filter, transform';
+    if (domRenderCache.iframeFilter !== filterValue) {
+      domRenderCache.iframeFilter = filterValue;
+      surface.style.filter = filterValue;
+      surface.style.webkitFilter = filterValue;
+    }
+    if (domRenderCache.iframeOpacity !== iframeOpacity) {
+      domRenderCache.iframeOpacity = iframeOpacity;
+      surface.style.opacity = iframeOpacity;
+    }
+    applyStyleIfChanged(surface, 'willChange', 'filter, transform');
   });
 }
 
@@ -1724,7 +1839,11 @@ function applyMasterFilters() {
       filters.push(hueFilter);
     }
 
-    wrapper.style.filter = filters.length > 0 ? filters.join(' ') : 'none';
+    const bodyFilter = filters.length > 0 ? filters.join(' ') : 'none';
+    if (domRenderCache.bodyFilter !== bodyFilter) {
+      domRenderCache.bodyFilter = bodyFilter;
+      wrapper.style.filter = bodyFilter;
+    }
 
     applyYouTubeSurfaceFilters(hueFilter);
 }
@@ -1758,8 +1877,8 @@ function resizeGlitchCanvas() {
   }
 
   // Use CSS pixels for the buffer so all effect functions remain mapped to screen size.
-  const width = Math.max(1, Math.floor(cssWidth));
-  const height = Math.max(1, Math.floor(cssHeight));
+  const width = Math.max(1, Math.floor(cssWidth * performanceProfile.renderScale));
+  const height = Math.max(1, Math.floor(cssHeight * performanceProfile.renderScale));
   if (glitchCanvas.width !== width || glitchCanvas.height !== height) {
     glitchCanvas.width = width;
     glitchCanvas.height = height;
@@ -1884,6 +2003,12 @@ function mainRenderLoop() {
         lastFrameTime = performance.now();
     }
     const now = performance.now();
+  if (document.hidden || (performanceProfile.renderIntervalMs > 0 && now - lastRenderDrawTime < performanceProfile.renderIntervalMs)) {
+    requestAnimationFrame(mainRenderLoop);
+    return;
+  }
+
+  lastRenderDrawTime = now;
     const deltaSeconds = (now - lastFrameTime) * timeScale * 0.001;
     lastFrameTime = now;
     customTime += deltaSeconds * 1000;
@@ -2094,7 +2219,12 @@ continualRandomizeBtn.addEventListener('click', () => {
   continualRandomizeBtn.textContent = isContinuallyRandomizing ? 'Continual Randomization: ON' : 'Continual Randomization: OFF';
   if (isContinuallyRandomizing) {
     ghostProtocolRandomTarget = ghostProtocolLevel;
-    generateNewRandomTargets();
+    youtubeIframeVisibilityTarget = youtubeIframeVisibility;
+    retargetContinualRandomization();
+  } else {
+    youtubeIframeVisibility = 1;
+    youtubeIframeVisibilityTarget = 1;
+    applyMasterFilters();
   }
 });
 
@@ -2127,43 +2257,59 @@ function stopGlitchOverlay() {
 }
 
 function updateGlitchOverlay() {
+  if (!glitchOverlayActive) {
+    window.isGlitchOverlayLoopRunning = false;
+    return;
+  }
+
+  const now = performance.now();
+  if (document.hidden || (performanceProfile.overlayIntervalMs > 0 && now - lastOverlayDrawTime < performanceProfile.overlayIntervalMs)) {
+    requestAnimationFrame(updateGlitchOverlay);
+    return;
+  }
+
+  lastOverlayDrawTime = now;
   window.isGlitchOverlayLoopRunning = true;
-  if (glitchOverlayActive) {
-    const time = performance.now();
-    const pulse = (Math.sin(time / 9000) + 1) / 2;
-    const blendIntensity = 0.16 + pulse * 0.18;
-    const primaryHue = aiWarpHue % 360;
-    const secondaryHue = (primaryHue + 82 + Math.sin(time / 11000) * 18) % 360;
-    const tertiaryHue = (primaryHue + 196 + Math.cos(time / 13000) * 24) % 360;
-    const x1 = 22 + Math.sin(time / 7000) * 12;
-    const y1 = 28 + Math.cos(time / 8200) * 10;
-    const x2 = 76 + Math.cos(time / 9600) * 11;
-    const y2 = 62 + Math.sin(time / 7600) * 9;
-    const angle = 140 + Math.sin(time / 15000) * 26;
+  const time = now;
+  const pulse = (Math.sin(time / 9000) + 1) / 2;
+  const blendIntensity = 0.16 + pulse * 0.18;
+  const primaryHue = aiWarpHue % 360;
+  const secondaryHue = (primaryHue + 82 + Math.sin(time / 11000) * 18) % 360;
+  const tertiaryHue = (primaryHue + 196 + Math.cos(time / 13000) * 24) % 360;
+  const x1 = 22 + Math.sin(time / 7000) * 12;
+  const y1 = 28 + Math.cos(time / 8200) * 10;
+  const x2 = 76 + Math.cos(time / 9600) * 11;
+  const y2 = 62 + Math.sin(time / 7600) * 9;
+  const angle = 140 + Math.sin(time / 15000) * 26;
 
-    // Get or create overlay element
-    let overlay = document.getElementById('color-shift-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'color-shift-overlay';
-      Object.assign(overlay.style, {
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        mixBlendMode: 'screen',
-        zIndex: '4',
-        opacity: '0',
-        transition: 'opacity 0.6s ease'
-      });
-      document.body.appendChild(overlay);
-    }
+  let overlay = document.getElementById('color-shift-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'color-shift-overlay';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      mixBlendMode: 'screen',
+      zIndex: '4',
+      opacity: '0',
+      transition: 'opacity 0.6s ease'
+    });
+    document.body.appendChild(overlay);
+  }
 
-    // Apply the dynamic styles
-    overlay.style.opacity = blendIntensity;
-    overlay.style.background = `radial-gradient(circle at ${x1}% ${y1}%, hsla(${primaryHue}, 100%, 62%, 0.34), transparent 34%), radial-gradient(circle at ${x2}% ${y2}%, hsla(${secondaryHue}, 92%, 58%, 0.28), transparent 36%), linear-gradient(${angle}deg, hsla(${tertiaryHue}, 100%, 56%, 0.18), hsla(${primaryHue}, 84%, 52%, 0.14), hsla(${secondaryHue}, 88%, 60%, 0.2))`;
+  const overlayOpacity = blendIntensity.toFixed(3);
+  const overlayBackground = `radial-gradient(circle at ${x1}% ${y1}%, hsla(${primaryHue}, 100%, 62%, 0.34), transparent 34%), radial-gradient(circle at ${x2}% ${y2}%, hsla(${secondaryHue}, 92%, 58%, 0.28), transparent 36%), linear-gradient(${angle}deg, hsla(${tertiaryHue}, 100%, 56%, 0.18), hsla(${primaryHue}, 84%, 52%, 0.14), hsla(${secondaryHue}, 88%, 60%, 0.2))`;
+  if (domRenderCache.overlayOpacity !== overlayOpacity) {
+    domRenderCache.overlayOpacity = overlayOpacity;
+    overlay.style.opacity = overlayOpacity;
+  }
+  if (domRenderCache.overlayBackground !== overlayBackground) {
+    domRenderCache.overlayBackground = overlayBackground;
+    overlay.style.background = overlayBackground;
   }
   requestAnimationFrame(updateGlitchOverlay);
 }
@@ -2201,57 +2347,39 @@ function updateAiWarpParameters() {
 
 function refreshEffectsLoop() {
   const now = performance.now();
+  if (document.hidden || (performanceProfile.effectsIntervalMs > 0 && now - lastEffectsDrawTime < performanceProfile.effectsIntervalMs)) {
+    requestAnimationFrame(refreshEffectsLoop);
+    return;
+  }
+
+  lastEffectsDrawTime = now;
   const deltaSeconds = Math.max(0, (now - lastRefreshEffectsTime) * 0.001);
   lastRefreshEffectsTime = now;
-
-  applyMasterFilters();
   
   // Use time-based stepping so continual randomization keeps moving at a stable rate.
   if (isContinuallyRandomizing) {
     let cacheChanged = false;
-    const step = randomizationSpeed * deltaSeconds;
-    const easingFactor = Math.min(0.18, deltaSeconds * 2.8);
 
     if (now >= nextRandomizationBehaviorChange) {
-      randomizationBehavior = randomizationBehavior === 'steady' ? 'targeted' : 'steady';
-      nextRandomizationBehaviorChange = now + 4000 + Math.random() * 5000;
+      retargetContinualRandomization(now);
     }
 
     if (!sliderLocks.global && randomTargetAlphas.global !== undefined) {
-      const globalTarget = randomTargetAlphas.global;
-      const globalDiff = globalTarget - masterOpacity;
-
-      if (Math.abs(globalDiff) < step) {
-        randomTargetAlphas.global = Math.random();
-      } else if (randomizationBehavior === 'targeted') {
-        masterOpacity += globalDiff * easingFactor;
-        globalSlider.value = masterOpacity.toFixed(3);
-        cacheChanged = true;
-      } else {
-        masterOpacity += Math.sign(globalDiff) * step;
+      const nextMasterOpacity = clamp01(easeToward(masterOpacity, randomTargetAlphas.global, deltaSeconds, 1.15));
+      if (Math.abs(nextMasterOpacity - masterOpacity) > 0.0005) {
+        masterOpacity = nextMasterOpacity;
         globalSlider.value = masterOpacity.toFixed(3);
         cacheChanged = true;
       }
     }
 
-    Object.keys(effectAlphas).forEach(name => {
+    continualConfluenceEffects.forEach(name => {
       if (!sliderLocks[name] && randomTargetAlphas[name] !== undefined) {
-        const target = randomTargetAlphas[name];
-        const current = effectAlphas[name];
-        const diff = target - current;
-        
-        if (Math.abs(diff) < step) {
-          randomTargetAlphas[name] = Math.random();
-        } else if (randomizationBehavior === 'targeted') {
-          effectAlphas[name] = current + (diff * easingFactor);
+        const nextValue = clamp01(easeToward(effectAlphas[name], randomTargetAlphas[name], deltaSeconds, 1.35));
+        if (Math.abs(nextValue - effectAlphas[name]) > 0.0005) {
+          effectAlphas[name] = nextValue;
           if (sliderElements[name]) {
-            sliderElements[name].value = effectAlphas[name];
-          }
-          cacheChanged = true;
-        } else {
-          effectAlphas[name] = current + Math.sign(diff) * step;
-          if (sliderElements[name]) {
-            sliderElements[name].value = effectAlphas[name];
+            sliderElements[name].value = effectAlphas[name].toFixed(3);
           }
           cacheChanged = true;
         }
@@ -2259,24 +2387,22 @@ function refreshEffectsLoop() {
     });
 
     if (ghostProtocolSlider) {
-      const ghostDiff = ghostProtocolRandomTarget - ghostProtocolLevel;
-      if (Math.abs(ghostDiff) < step) {
-        ghostProtocolRandomTarget = Math.random();
-      } else if (randomizationBehavior === 'targeted') {
-        ghostProtocolLevel += ghostDiff * easingFactor;
-        ghostProtocolSlider.value = ghostProtocolLevel.toFixed(3);
-        updateGhostProtocolUi();
-      } else {
-        ghostProtocolLevel += Math.sign(ghostDiff) * step;
+      const nextGhostLevel = clamp01(easeToward(ghostProtocolLevel, ghostProtocolRandomTarget, deltaSeconds, 0.95));
+      if (Math.abs(nextGhostLevel - ghostProtocolLevel) > 0.0005) {
+        ghostProtocolLevel = nextGhostLevel;
         ghostProtocolSlider.value = ghostProtocolLevel.toFixed(3);
         updateGhostProtocolUi();
       }
     }
 
+    youtubeIframeVisibility = clamp01(easeToward(youtubeIframeVisibility, youtubeIframeVisibilityTarget, deltaSeconds, 1.2));
+
     if (cacheChanged) {
       updateContinuousEffectsCache();
     }
   }
+
+  applyMasterFilters();
   
   if (isAiWarpActive) {
     updateAiWarpParameters();
@@ -2392,36 +2518,7 @@ function startPlayback(url, loop = false) {
         }
     }
 
-    // Ensure the YouTube iframe is visible and local video is hidden
-    if (ytWarpShell) {
-      ytWarpShell.style.display = 'block';
-    }
-    if (video) {
-        video.style.display = 'none';
-    }
-
-    // --- UI Update Logic (unchanged) ---
-    ytInput.style.display = 'none';
-    startBtn.style.display = 'none';
-    openFileBtn.style.display = 'none';
-    suggestedVideo.style.display = 'none';
-    suggestedPlaylist.style.display = 'none';
-    suggestedVideo3.style.display = 'none';
-    suggestedVideo2.style.display = 'none';
-    suggestedYoutube.style.display = 'none';
-    testCanvas.style.display = 'none';
-    defcon1Video.style.display = 'none';
-    randomizeBtn.style.display = 'block';
-    autoGlitchBtn.style.display = 'block';
-    continualRandomizeBtn.style.display = 'block';
-    aiWarpBtn.style.display = 'block';
-    sliderContainer.style.display = 'block';
-    document.getElementById('preset-toggle-btn').style.display = 'block';
-    glitchCanvas.style.zIndex = '2';
-    applyMasterFilters();
-    if (!isLooping) {
-        mainRenderLoop();
-    }
+    activatePlaybackUi('youtube');
 }
 
 function onPlayerReady(event) {
@@ -2455,30 +2552,12 @@ startBtn.addEventListener('click', () => {
     startPlayback(ytInput.value.trim());
 });
 
-suggestedVideo.addEventListener('click', () => {
-    const url = 'https://www.youtube.com/watch?v=gopYmb38DgM';
-    startPlayback(url);
-});
-
-suggestedVideo2.addEventListener('click', () => {
-    const url = 'https://www.youtube.com/watch?v=8o6bdTOhIyE';
-    startPlayback(url);
-});
-
-suggestedVideo3.addEventListener('click', () => {
-    const url = 'https://www.youtube.com/watch?v=uvSXL6ypLlw';
-    startPlayback(url);
-});
-
-suggestedYoutube.addEventListener('click', () => {
-    const url = 'https://www.youtube.com/watch?v=8hGxNwyH3LI';
-    startPlayback(url);
-});
-
-suggestedPlaylist.addEventListener('click', () => {
-    const url = 'https://www.youtube.com/watch?v=RgFaK6ZQifE&list=RDEMWUbu7UjvrEYUSE4m8ATOcw&start_radio=1';
-    startPlayback(url);
-});
+bindPlaybackTrigger(suggestedVideo, 'https://www.youtube.com/watch?v=gopYmb38DgM');
+bindPlaybackTrigger(suggestedVideo2, 'https://www.youtube.com/watch?v=8o6bdTOhIyE');
+bindPlaybackTrigger(suggestedVideo3, 'https://www.youtube.com/watch?v=uvSXL6ypLlw');
+bindPlaybackTrigger(suggestedYoutube, 'https://www.youtube.com/watch?v=8hGxNwyH3LI');
+bindPlaybackTrigger(defcon1Video, 'https://www.youtube.com/watch?v=jmEAP7aGo0o');
+bindPlaybackTrigger(suggestedPlaylist, 'https://www.youtube.com/watch?v=RgFaK6ZQifE&list=RDEMWUbu7UjvrEYUSE4m8ATOcw&start_radio=1', true);
 
 testCanvas.addEventListener('click', () => {
     const url = 'https://www.youtube.com/watch?v=kCP2xZvhJk0';
@@ -2612,6 +2691,13 @@ requestAnimationFrame(() => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  resize();
+  refreshEffectsLoop();
+  if (!isHttpOrigin()) {
+    showNotificationMessage('YouTube playback needs http://localhost or another web origin. Local video mode still works from file://.', 5600);
+  }
+  loadPresetsFromStorage();
+
     const hiddenUrl = 'https://www.youtube.com/watch?v=DmStNF35o1w';
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let idleTimer = null;
@@ -2680,9 +2766,13 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(idleTimer);
 
         const writeHiddenUrlToClipboard = async () => {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(hiddenUrl);
-                return true;
+          if (navigator.clipboard && window.isSecureContext && document.hasFocus()) {
+            try {
+              await navigator.clipboard.writeText(hiddenUrl);
+              return true;
+            } catch (err) {
+              // Fall back to the manual copy path when browser focus/permissions block clipboard access.
+            }
             }
 
             const textarea = document.createElement('textarea');
@@ -2759,7 +2849,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
             } catch (err) {
-                console.error('Easter egg failed:', err);
+              if (err?.name === 'NotAllowedError') {
+                return;
+              }
+              console.error('Easter egg failed:', err);
             }
         };
     
@@ -2786,9 +2879,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1200);
 
     // --- Preset Dropdown Logic ---
-    const presetToggleBtn = document.getElementById('preset-toggle-btn');
-    const presetDropdownContainer = document.getElementById('preset-dropdown-container');
-
     presetToggleBtn.addEventListener('click', () => {
         // We check display property because height can be 0 during transition
         const isCurrentlyVisible = presetDropdownContainer.style.display === 'flex';
@@ -2832,6 +2922,8 @@ const presetDeleteAllBtn = document.querySelector('.preset-delete-all-btn');
 const presetNavLeft = document.querySelector('.preset-nav-btn.left'); 
 const presetNavRight = document.querySelector('.preset-nav-btn.right'); 
 const currentPresetDisplay = document.getElementById('current-preset-display');
+const presetToggleBtn = document.getElementById('preset-toggle-btn');
+const presetDropdownContainer = document.getElementById('preset-dropdown-container');
 
 // In-memory state
 let presets = []; 
@@ -3044,7 +3136,7 @@ function applyEffectSettings(settings) {
   isContinuallyRandomizing = settings.isContinuallyRandomizing ?? false;
   continualRandomizeBtn.textContent = isContinuallyRandomizing ? 'Continual Randomization: ON' : 'Continual Randomization: OFF';
   if (isContinuallyRandomizing) {
-    generateNewRandomTargets(); // Start randomization if enabled
+    retargetContinualRandomization();
   }
 
   // Restore AI Warp button state and effect
@@ -3079,15 +3171,6 @@ function applyEffectSettings(settings) {
   });
 } 
 
-// Initial Load
-document.addEventListener('DOMContentLoaded', () => {
-  resize();
-  refreshEffectsLoop();
-  if (!isHttpOrigin()) {
-    showNotificationMessage('YouTube playback needs http://localhost or another web origin. Local video mode still works from file://.', 5600);
-  }
-  loadPresetsFromStorage();
-}); 
 </script>
 </body>
 </html>

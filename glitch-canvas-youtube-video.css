@@ -33,16 +33,8 @@
       border: none;
     }
 
-    @font-face {
-      font-family: 'BlackOut 2AM';
-      src: url('../fonts/BlackOut-2AM-webfont.woff') format('woff');
-      font-weight: normal;
-      font-style: normal;
-    }
-  
-
    #suggestedVideo, #suggestedPlaylist, #suggestedVideo2, #suggestedVideo3, #testCanvas, #suggestedYoutube {
-      font-family: 'BlackOut 2AM', monospace;
+      font-family: Impact, 'Arial Black', 'Franklin Gothic Heavy', sans-serif;
       text-align: center;
       color: white;
       cursor: pointer;
