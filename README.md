@@ -30,7 +30,8 @@ Pushing changes to `vlc-plugin/` or manually starting the `Build VLC plugin` wor
 Use `scripts/install-glitch-canvas-vlc.ps1` to install or remove the plugin without manual file edits:
 
 ```powershell
-# Install plugin file, rebuild plugin cache, and enable the filter in vlcrc.
+# Install plugin file, rebuild plugin cache, and enable the filter in vlcrc
+# (both video-filter list and glitch-canvas-enable=1).
 powershell -ExecutionPolicy Bypass -File scripts/install-glitch-canvas-vlc.ps1 -Mode install
 
 # Optional modes

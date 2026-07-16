@@ -96,6 +96,42 @@ function Update-VideoFilterSetting {
     Set-Content -LiteralPath $vlcConfigPath -Value $lines -Encoding UTF8
 }
 
+function Update-GlitchEnableSetting {
+    param(
+        [bool]$Enable
+    )
+
+    $vlcConfigDir = Join-Path $env:APPDATA 'vlc'
+    $vlcConfigPath = Join-Path $vlcConfigDir 'vlcrc'
+
+    if (-not (Test-Path -LiteralPath $vlcConfigDir)) {
+        New-Item -ItemType Directory -Path $vlcConfigDir | Out-Null
+    }
+
+    if (-not (Test-Path -LiteralPath $vlcConfigPath)) {
+        New-Item -ItemType File -Path $vlcConfigPath | Out-Null
+    }
+
+    $lines = Get-Content -LiteralPath $vlcConfigPath
+    $idx = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^\s*#?\s*glitch-canvas-enable=') {
+            $idx = $i
+            break
+        }
+    }
+
+    $newLine = 'glitch-canvas-enable=' + ($(if ($Enable) { '1' } else { '0' }))
+
+    if ($idx -ge 0) {
+        $lines[$idx] = $newLine
+    } else {
+        $lines += $newLine
+    }
+
+    Set-Content -LiteralPath $vlcConfigPath -Value $lines -Encoding UTF8
+}
+
 function Rebuild-PluginCache {
     param([string]$VlcRoot)
 
@@ -126,24 +162,28 @@ switch ($Mode) {
             Copy-Item -LiteralPath $pluginSource -Destination $pluginDest -Force
             Rebuild-PluginCache -VlcRoot $VlcDir
             Update-VideoFilterSetting -Enable $true
+            Update-GlitchEnableSetting -Enable $true
         }
         Write-Host 'Installed and enabled Glitch Canvas filter.'
     }
     'enable' {
         if ($PSCmdlet.ShouldProcess('vlcrc', 'Enable glitch_canvas in video-filter list')) {
             Update-VideoFilterSetting -Enable $true
+            Update-GlitchEnableSetting -Enable $true
         }
         Write-Host 'Enabled Glitch Canvas in VLC configuration.'
     }
     'disable' {
         if ($PSCmdlet.ShouldProcess('vlcrc', 'Disable glitch_canvas in video-filter list')) {
             Update-VideoFilterSetting -Enable $false
+            Update-GlitchEnableSetting -Enable $false
         }
         Write-Host 'Disabled Glitch Canvas in VLC configuration.'
     }
     'uninstall' {
         if ($PSCmdlet.ShouldProcess($pluginDest, 'Uninstall glitch_canvas plugin')) {
             Update-VideoFilterSetting -Enable $false
+            Update-GlitchEnableSetting -Enable $false
             if (Test-Path -LiteralPath $pluginDest) {
                 Remove-Item -LiteralPath $pluginDest -Force
             }
