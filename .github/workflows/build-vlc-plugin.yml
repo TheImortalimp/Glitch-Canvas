@@ -32,9 +32,22 @@ jobs:
           -DVLC_PLUGIN_INCLUDE_DIR="${{ github.workspace }}\third_party\vlc\include"
 
       - name: Build module
-        run: cmake --build build/vlc-plugin --config Release
+        id: build
+        shell: pwsh
+        run: |
+          cmake --build build/vlc-plugin --config Release 2>&1 | Tee-Object -FilePath build/vlc-plugin/build.log
+          exit $LASTEXITCODE
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glitch-canvas-vlc-build-log
+          path: build/vlc-plugin/build.log
+          if-no-files-found: error
 
       - name: Upload plugin artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: glitch-canvas-vlc-plugin-windows
