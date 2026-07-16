@@ -41,6 +41,15 @@ powershell -ExecutionPolicy Bypass -File scripts/install-glitch-canvas-vlc.ps1 -
 
 If the DLL is in a custom location, pass `-PluginDllPath C:\path\to\glitch_canvas.dll`.
 
+## Windows double-click installers
+
+For Explorer-based setup without typing commands:
+
+1. Run `install.bat` from the repository root.
+2. Run `uninstall.bat` to remove and disable the plugin.
+
+`install.bat` prefers `..\glitch-canvas-vlc-plugin-windows-latest\glitch_canvas.dll` and falls back to `..\glitch-canvas-vlc-plugin-windows\glitch_canvas.dll`.
+
 ## VLC checkbox/toggle
 
 The plugin now exposes an explicit boolean option named `Enable Glitch Canvas effect`.
