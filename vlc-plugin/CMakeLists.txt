@@ -12,7 +12,9 @@ endif()
 add_library(glitch_canvas MODULE src/glitch_canvas.c)
 
 target_compile_features(glitch_canvas PRIVATE c_std_11)
-target_compile_definitions(glitch_canvas PRIVATE __PLUGIN__)
+target_compile_definitions(glitch_canvas PRIVATE
+  __PLUGIN__
+  MODULE_STRING="glitch_canvas")
 target_include_directories(glitch_canvas PRIVATE "${VLC_PLUGIN_INCLUDE_DIR}")
 
 set_target_properties(glitch_canvas PROPERTIES
