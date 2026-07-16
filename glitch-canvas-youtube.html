@@ -613,7 +613,7 @@ window.addEventListener('mousemove', (event) => {
   }
 });
 
-function createTimedEffect(fn, duration = 3000 + Math.random() * 3000) {
+function createTimedEffect(fn, duration = 1500 + Math.random() * 1500) {
   const startTime = performance.now();
   let timedEffect; 
   timedEffect = function() {
@@ -2471,7 +2471,7 @@ function refreshEffectsLoop() {
       }
 
       if (!sliderLocks.global && randomTargetAlphas.global !== undefined) {
-        const { value: next, changed } = interpolateValue(masterOpacity, randomTargetAlphas.global, deltaSeconds, 1.15);
+        const { value: next, changed } = interpolateValue(masterOpacity, randomTargetAlphas.global, deltaSeconds, 1.9);
         if (changed) {
           masterOpacity = next;
           globalSlider.value = masterOpacity.toFixed(3);
@@ -2483,7 +2483,7 @@ function refreshEffectsLoop() {
       continualConfluenceEffects.forEach(name => {
         if (!sliderLocks[name] && randomTargetAlphas[name] !== undefined) {
           effectAlphas[name] = Number.isFinite(effectAlphas[name]) ? effectAlphas[name] : 0;
-          const { value: next, changed } = interpolateValue(effectAlphas[name], randomTargetAlphas[name], deltaSeconds, 1.35);
+          const { value: next, changed } = interpolateValue(effectAlphas[name], randomTargetAlphas[name], deltaSeconds, 2.2);
           if (changed) {
             effectAlphas[name] = next;
             if (sliderElements[name]) sliderElements[name].value = next.toFixed(3);
@@ -2494,7 +2494,7 @@ function refreshEffectsLoop() {
       });
 
       if (ghostProtocolSlider) {
-        const { value: next, changed } = interpolateValue(ghostProtocolLevel, ghostProtocolRandomTarget, deltaSeconds, 0.95);
+        const { value: next, changed } = interpolateValue(ghostProtocolLevel, ghostProtocolRandomTarget, deltaSeconds, 1.6);
         if (changed) {
           ghostProtocolLevel = next;
           ghostProtocolSlider.value = next.toFixed(3);
@@ -2503,7 +2503,7 @@ function refreshEffectsLoop() {
         }
       }
 
-      const { value: nextVis, changed: visChanged } = interpolateValue(youtubeIframeVisibility, youtubeIframeVisibilityTarget, deltaSeconds, 1.2);
+      const { value: nextVis, changed: visChanged } = interpolateValue(youtubeIframeVisibility, youtubeIframeVisibilityTarget, deltaSeconds, 1.9);
       if (visChanged) {
         youtubeIframeVisibility = nextVis;
         markContinualRandomizationMotion(now);
