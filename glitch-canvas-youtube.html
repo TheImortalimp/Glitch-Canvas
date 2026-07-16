@@ -223,7 +223,7 @@ function ensureFiniteUnitInterval(value, fallback) {
 }
 
 function hasContinualRandomizationSettled() {
-  const settleThreshold = 0.0035;
+  const settleThreshold = 0.001; // Tighter threshold - almost never settles
 
   if (!sliderLocks.global && randomTargetAlphas.global !== undefined && Math.abs(masterOpacity - randomTargetAlphas.global) > settleThreshold) {
     return false;
@@ -276,9 +276,13 @@ function safeguardContinualRandomization(now = performance.now()) {
   const retargetIdleForMs = now - continualRandomizationWatchdog.lastRetargetTime;
   const settled = hasContinualRandomizationSettled();
 
-  if ((settled && retargetIdleForMs > 1400) || stalledForMs > 2600 || retargetIdleForMs > 9000) {
+  // Always retarget on schedule to prevent settling pauses
+  if (now >= nextRandomizationBehaviorChange) {
     retargetContinualRandomization(now);
-    continualRandomizationWatchdog.lastRetargetTime = now;
+  }
+  // Emergency retarget if truly stalled
+  else if ((settled && retargetIdleForMs > 800) || stalledForMs > 2600 || retargetIdleForMs > 7000) {
+    retargetContinualRandomization(now);
     continualRandomizationWatchdog.lastMotionTime = now;
     updateContinuousEffectsCache();
   }
@@ -290,28 +294,31 @@ function retargetContinualRandomization(now = performance.now()) {
   const textureAnchor = Math.random();
   const textureAmount = 0.04 + textureAnchor * 0.2;
 
+  // Add micro-randomization to prevent settling
+  const microRandom = () => (Math.random() - 0.5) * 0.02;
+
   if (!sliderLocks['Hue/Color Cycle']) {
-    randomTargetAlphas['Hue/Color Cycle'] = clamp01(0.18 + hueAnchor * 0.58);
+    randomTargetAlphas['Hue/Color Cycle'] = clamp01(0.18 + hueAnchor * 0.58 + microRandom());
   }
   if (!sliderLocks['B&W Invert']) {
-    randomTargetAlphas['B&W Invert'] = clamp01(0.02 + visibilityAnchor * 0.12);
+    randomTargetAlphas['B&W Invert'] = clamp01(0.02 + visibilityAnchor * 0.12 + microRandom());
   }
   if (!sliderLocks['Data Bands']) {
-    randomTargetAlphas['Data Bands'] = clamp01(textureAmount * (0.75 + hueAnchor * 0.25));
+    randomTargetAlphas['Data Bands'] = clamp01(textureAmount * (0.75 + hueAnchor * 0.25) + microRandom());
   }
   if (!sliderLocks['VHS Glitch']) {
-    randomTargetAlphas['VHS Glitch'] = clamp01(textureAmount * (0.55 + (1 - visibilityAnchor) * 0.25));
+    randomTargetAlphas['VHS Glitch'] = clamp01(textureAmount * (0.55 + (1 - visibilityAnchor) * 0.25) + microRandom());
   }
   if (!sliderLocks['Scanlines']) {
-    randomTargetAlphas['Scanlines'] = clamp01(0.08 + textureAmount * 0.65);
+    randomTargetAlphas['Scanlines'] = clamp01(0.08 + textureAmount * 0.65 + microRandom());
   }
   if (!sliderLocks.global) {
-    randomTargetAlphas.global = clamp01(0.7 + visibilityAnchor * 0.18 - hueAnchor * 0.05);
+    randomTargetAlphas.global = clamp01(0.7 + visibilityAnchor * 0.18 - hueAnchor * 0.05 + microRandom());
   }
 
-  ghostProtocolRandomTarget = clamp01(0.14 + textureAmount * 0.6 + hueAnchor * 0.08);
-  youtubeIframeVisibilityTarget = clamp01(0.84 + visibilityAnchor * 0.1 + hueAnchor * 0.04);
-  nextRandomizationBehaviorChange = now + 4200 + Math.random() * 2600;
+  ghostProtocolRandomTarget = clamp01(0.14 + textureAmount * 0.6 + hueAnchor * 0.08 + microRandom());
+  youtubeIframeVisibilityTarget = clamp01(0.84 + visibilityAnchor * 0.1 + hueAnchor * 0.04 + microRandom());
+  nextRandomizationBehaviorChange = now + 2000 + Math.random() * 1600; // Retarget every 2-3.6s
   continualRandomizationWatchdog.lastRetargetTime = now;
 }
 
