@@ -6,14 +6,19 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+# include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include <vlc_common.h>
 #include <vlc_filter.h>
 #include <vlc_picture.h>
 #include <vlc_plugin.h>
 
-typedef struct {
+struct filter_sys_t {
     unsigned int frame_index;
-} filter_sys_t;
+};
 
 static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
 {
