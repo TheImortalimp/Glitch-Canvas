@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef _WIN32
 # include <BaseTsd.h>
@@ -15,12 +16,29 @@ typedef SSIZE_T ssize_t;
 #include <vlc_filter.h>
 #include <vlc_picture.h>
 #include <vlc_plugin.h>
-#include <vlc_variables.h>
+#include <vlc_configuration.h>
 
 struct filter_sys_t {
     bool enabled;
     unsigned int frame_index;
 };
+
+static bool GetEnableOption(const filter_t *filter)
+{
+    for (const config_chain_t *cfg = filter->p_cfg; cfg != NULL; cfg = cfg->p_next) {
+        if (cfg->psz_name == NULL || strcmp(cfg->psz_name, "glitch-canvas-enable") != 0) {
+            continue;
+        }
+
+        if (cfg->psz_value == NULL) {
+            return true;
+        }
+
+        return atoi(cfg->psz_value) != 0;
+    }
+
+    return true;
+}
 
 static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
 {
@@ -79,7 +97,7 @@ static int Open(vlc_object_t *object)
         return VLC_ENOMEM;
     }
 
-    sys->enabled = var_CreateGetBool(filter, "glitch-canvas-enable");
+    sys->enabled = GetEnableOption(filter);
     filter->p_sys = sys;
     filter->pf_video_filter = FilterVideo;
     return VLC_SUCCESS;
