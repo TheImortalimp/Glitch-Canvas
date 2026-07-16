@@ -20,13 +20,14 @@ typedef SSIZE_T ssize_t;
 
 struct filter_sys_t {
     bool enabled;
+    bool show_controls;
     unsigned int frame_index;
 };
 
-static bool GetEnableOption(const filter_t *filter)
+static bool GetBoolOption(const filter_t *filter, const char *name, bool default_value)
 {
     for (const config_chain_t *cfg = filter->p_cfg; cfg != NULL; cfg = cfg->p_next) {
-        if (cfg->psz_name == NULL || strcmp(cfg->psz_name, "glitch-canvas-enable") != 0) {
+        if (cfg->psz_name == NULL || strcmp(cfg->psz_name, name) != 0) {
             continue;
         }
 
@@ -37,7 +38,61 @@ static bool GetEnableOption(const filter_t *filter)
         return atoi(cfg->psz_value) != 0;
     }
 
-    return true;
+    return default_value;
+}
+
+static void DrawControlsOverlayPacked(plane_t *plane)
+{
+    const unsigned int height = plane->i_visible_lines < 28u ? plane->i_visible_lines : 28u;
+    const unsigned int pixel_count = plane->i_visible_pitch / 4u;
+
+    for (unsigned int y = 0; y < height; ++y) {
+        uint8_t *row = plane->p_pixels + y * plane->i_pitch;
+        for (unsigned int p = 0; p < pixel_count; ++p) {
+            uint8_t *px = row + p * 4u;
+
+            px[0] = (uint8_t)(px[0] * 2u / 3u);
+            px[1] = (uint8_t)(px[1] * 2u / 3u);
+            px[2] = (uint8_t)(px[2] * 2u / 3u);
+
+            if (y >= 4u && y <= 23u) {
+                if (p >= 8u && p <= 74u) {
+                    px[0] = 30u;
+                    px[1] = 200u;
+                    px[2] = 80u;
+                } else if (p >= 84u && p <= 150u) {
+                    px[0] = 70u;
+                    px[1] = 140u;
+                    px[2] = 245u;
+                } else if (p >= 160u && p <= 226u) {
+                    px[0] = 235u;
+                    px[1] = 120u;
+                    px[2] = 30u;
+                }
+            }
+        }
+    }
+}
+
+static void DrawControlsOverlayPlanar(plane_t *plane)
+{
+    const unsigned int height = plane->i_visible_lines < 28u ? plane->i_visible_lines : 28u;
+    const unsigned int width = plane->i_visible_pitch;
+
+    for (unsigned int y = 0; y < height; ++y) {
+        uint8_t *row = plane->p_pixels + y * plane->i_pitch;
+        for (unsigned int x = 0; x < width; ++x) {
+            uint8_t value = (uint8_t)(row[x] * 2u / 3u);
+            if (y >= 4u && y <= 23u) {
+                if ((x >= 8u && x <= 74u) ||
+                    (x >= 84u && x <= 150u) ||
+                    (x >= 160u && x <= 226u)) {
+                    value = 220u;
+                }
+            }
+            row[x] = value;
+        }
+    }
 }
 
 static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
@@ -97,6 +152,14 @@ static picture_t *FilterVideo(filter_t *filter, picture_t *picture)
         }
     }
 
+    if (sys->show_controls) {
+        if (is_packed_rgba) {
+            DrawControlsOverlayPacked(plane);
+        } else {
+            DrawControlsOverlayPlanar(plane);
+        }
+    }
+
     sys->frame_index++;
     return picture;
 }
@@ -110,7 +173,8 @@ static int Open(vlc_object_t *object)
         return VLC_ENOMEM;
     }
 
-    sys->enabled = GetEnableOption(filter);
+    sys->enabled = GetBoolOption(filter, "glitch-canvas-enable", true);
+    sys->show_controls = GetBoolOption(filter, "glitch-canvas-show-controls", true);
     filter->p_sys = sys;
     filter->pf_video_filter = FilterVideo;
     return VLC_SUCCESS;
@@ -129,6 +193,9 @@ vlc_module_begin()
     add_bool("glitch-canvas-enable", true,
              "Enable Glitch Canvas effect",
              "When disabled, the module stays loaded but leaves frames unchanged.", false)
+    add_bool("glitch-canvas-show-controls", true,
+             "Show on-video control strip",
+             "Draws a simple control strip overlay at the top of the video.", false)
     set_capability("video filter", 0)
     set_callbacks(Open, Close)
     add_shortcut("glitch_canvas")

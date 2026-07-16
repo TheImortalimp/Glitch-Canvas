@@ -62,4 +62,16 @@ In VLC:
 3. Go to `Video -> Filters -> Glitch Canvas`.
 4. Toggle `Enable Glitch Canvas effect`.
 
+The plugin also exposes `Show on-video control strip`, which draws a simple
+top-bar control strip directly over the video output.
+
 To activate the module itself from VLC settings, add `glitch_canvas` under `Video -> Filters -> Video filtering module` (the installer script handles this by updating `vlcrc`).
+
+## Dedicated Effects and Filters section (VLC fork)
+
+Creating a dedicated Glitch Canvas subsection inside `Tools -> Effects and Filters`
+requires patching VLC's Qt GUI source. A plugin DLL alone cannot add a new section
+to that dialog.
+
+See `vlc-plugin/VLC_FORK_UI_INTEGRATION.md` for the exact files, wiring pattern,
+and validation checklist.
