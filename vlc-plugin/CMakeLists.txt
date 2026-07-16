@@ -11,6 +11,13 @@ endif()
 
 add_library(glitch_canvas MODULE src/glitch_canvas.c)
 
+# Produce a self-contained Windows plugin that does not require VCRUNTIME140.dll
+# to be preinstalled on target machines.
+if(MSVC)
+  set_property(TARGET glitch_canvas PROPERTY
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 target_compile_features(glitch_canvas PRIVATE c_std_11)
 target_compile_definitions(glitch_canvas PRIVATE
   __PLUGIN__
