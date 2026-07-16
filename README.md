@@ -24,3 +24,32 @@ VLC's installed Windows application does not include the development headers nee
 ## Cloud build
 
 Pushing changes to `vlc-plugin/` or manually starting the `Build VLC plugin` workflow in GitHub Actions builds the Windows DLL on a hosted runner. Download `glitch-canvas-vlc-plugin-windows` from that workflow run's artifacts; no CMake or C compiler is required on this machine.
+
+## Windows installer script
+
+Use `scripts/install-glitch-canvas-vlc.ps1` to install or remove the plugin without manual file edits:
+
+```powershell
+# Install plugin file, rebuild plugin cache, and enable the filter in vlcrc.
+powershell -ExecutionPolicy Bypass -File scripts/install-glitch-canvas-vlc.ps1 -Mode install
+
+# Optional modes
+powershell -ExecutionPolicy Bypass -File scripts/install-glitch-canvas-vlc.ps1 -Mode enable
+powershell -ExecutionPolicy Bypass -File scripts/install-glitch-canvas-vlc.ps1 -Mode disable
+powershell -ExecutionPolicy Bypass -File scripts/install-glitch-canvas-vlc.ps1 -Mode uninstall
+```
+
+If the DLL is in a custom location, pass `-PluginDllPath C:\path\to\glitch_canvas.dll`.
+
+## VLC checkbox/toggle
+
+The plugin now exposes an explicit boolean option named `Enable Glitch Canvas effect`.
+
+In VLC:
+
+1. Open `Tools -> Preferences`.
+2. Set `Show settings` to `All`.
+3. Go to `Video -> Filters -> Glitch Canvas`.
+4. Toggle `Enable Glitch Canvas effect`.
+
+To activate the module itself from VLC settings, add `glitch_canvas` under `Video -> Filters -> Video filtering module` (the installer script handles this by updating `vlcrc`).
